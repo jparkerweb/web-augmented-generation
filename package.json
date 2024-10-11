@@ -1,0 +1,28 @@
+{
+  "name": "web-augmented-generation",
+  "description": "Web Augmented Generation using Ollama and SearXNG",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [
+    "ollama",
+    "web",
+    "augmented",
+    "generation",
+    "search"
+  ],
+  "author": "Justin Parker",
+  "license": "ISC",
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.0.3",
+    "jsdom": "^25.0.1",
+    "node-fetch": "^3.3.1",
+    "ollama": "^0.5.9",
+    "ora": "^8.1.0"
+  }
+}

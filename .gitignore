@@ -1,0 +1,4 @@
+node_modules
+.env
+log.txt
+error_log.txt
