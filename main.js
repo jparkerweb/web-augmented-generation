@@ -55,7 +55,7 @@ async function searchWeb(query) {
         }
       });
 
-      console.log(`Attempt ${attempt + 1}: Status ${response.status}`);
+      // console.log(` Attempt ${attempt + 1}: Status ${response.status}`);
 
       if (response.status === 429) { // Too Many Requests
         const backoffTime = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
@@ -65,7 +65,7 @@ async function searchWeb(query) {
       }
 
       // Log headers for debugging
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      // console.log(" ⇢ Response headers:", Object.fromEntries(response.headers.entries()));
 
       const contentType = response.headers.get("content-type");
 
