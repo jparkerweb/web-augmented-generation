@@ -1,0 +1,27 @@
+#!/bin/bash
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+parent_dir="$( cd "$script_dir/.." && pwd )"
+
+# Clear the console (works for both Unix-like and Windows environments)
+if [ -n "$WINDIR" ]; then
+    cls
+else
+    clear
+fi
+
+if [ -n "$WINDIR" ]; then
+    # Windows environment
+    if [ -n "$TERM_PROGRAM" ] && [ "$TERM_PROGRAM" = "vscode" ]; then
+        # VS Code terminal (uses PowerShell by default)
+        powershell.exe -ExecutionPolicy Bypass -File "$script_dir/ask.ps1"
+    elif [ -n "$COMSPEC" ]; then
+        # CMD
+        "$COMSPEC" /c "$script_dir/ask.bat"
+    else
+        # Git Bash or other bash shells
+        bash "$script_dir/ask.sh"
+    fi
+else
+    # Unix-like environment
+    bash "$script_dir/ask.sh"
+fi

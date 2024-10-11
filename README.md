@@ -239,3 +239,55 @@ Now you have a local SearXNG instance running on port 8787 with JSON output enab
         }
     }
 ```
+
+## Ask Scripts
+
+This project includes convenient scripts to run the application from the command line. These scripts are located in the `ask-scripts` directory:
+
+- `ask`: Universal script for Unix-like systems and Windows
+- `ask.sh`: Bash script for Unix-like systems
+- `ask.bat`: Batch script for Windows Command Prompt
+- `ask.ps1`: PowerShell script for Windows PowerShell
+
+### Usage
+
+To use these scripts globally, you need to add the `ask-scripts` directory to your system's PATH. Here are instructions for different operating systems:
+
+#### Windows
+
+1. Open the Start menu and search for "Environment Variables"
+2. Click on "Edit the system environment variables"
+3. Click the "Environment Variables" button
+4. Under "System variables", find and select the "Path" variable, then click "Edit"
+5. Click "New" and add the full path to your `ask-scripts` directory
+6. Click "OK" to close all dialogs
+
+#### macOS and Linux
+
+1. Open your shell configuration file (e.g., `~/.bashrc`, `~/.zshrc`, or `~/.bash_profile`)
+2. Add the following line, replacing `/path/to/ask-scripts` with the actual path:
+   ```
+   export PATH="$PATH:/path/to/ask-scripts"
+   ```
+3. Save the file and restart your terminal or run `source ~/.bashrc` (or the appropriate file you edited)
+
+### Running the Scripts
+
+Once the `ask-scripts` directory is in your PATH, you can run the application from anywhere by simply typing:
+
+```
+ask
+```
+
+The script will then prompt you to enter your question or prompt.
+
+This command will automatically use the appropriate script for your system:
+
+- On Unix-like systems (Linux, macOS), it will use the bash script.
+- On Windows, it will detect your environment and use the appropriate script (PowerShell or Command Prompt).
+
+You don't need to provide the question or prompt as a command-line argument. The script will interactively ask for your input.
+
+These scripts provide a convenient way to interact with the application without having to navigate to the project directory or manually run `node main.js` each time.
+
+![ask-scripts](./ask-scripts/ask.gif)
