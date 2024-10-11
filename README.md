@@ -1,4 +1,4 @@
-# Web-Augmented Generation Node.js Application
+# 🌐 Web-Augmented Generation
 
 This Node.js application performs web-augmented generation using Ollama and web search results from SearXNG.
 
