@@ -21,8 +21,8 @@ This Node.js application performs web-augmented generation using Ollama and web 
 
 1. Clone the repository:
    ```
-   git clone <repository-url>
-   cd web-augmented-generation-nodejs
+   git clone https://github.com/jparkerweb/web-augmented-generation.git
+   cd web-augmented-generation
    ```
 
 2. Install dependencies:
