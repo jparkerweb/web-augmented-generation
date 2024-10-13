@@ -1,7 +1,7 @@
 {
   "name": "web-augmented-generation",
   "description": "Web Augmented Generation using Ollama and SearXNG",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "main.js",
   "scripts": {
@@ -23,6 +23,10 @@
     "jsdom": "^25.0.1",
     "node-fetch": "^3.3.1",
     "ollama": "^0.5.9",
-    "ora": "^8.1.0"
+    "ora": "^8.1.0",
+    "string-segmenter": "^1.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

@@ -7,9 +7,9 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs/promises';
 import ora from 'ora';
-import { setTimeout } from 'timers/promises';
 import https from 'https';
 import * as cheerio from 'cheerio';
+import { splitBySentence } from "string-segmenter"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,7 +60,7 @@ async function searchWeb(query) {
       if (response.status === 429) { // Too Many Requests
         const backoffTime = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
         console.warn(`Rate limited. Retrying in ${backoffTime}ms...`);
-        await setTimeout(backoffTime);
+        await delay(backoffTime);
         continue;
       }
 
@@ -92,7 +92,7 @@ async function searchWeb(query) {
       }
       const backoffTime = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
       console.warn(`Error occurred. Retrying in ${backoffTime}ms...`);
-      await setTimeout(backoffTime);
+      await delay(backoffTime);
     }
   }
 }
@@ -114,7 +114,10 @@ function extractLinksFromHTML(html) {
 
 async function fetchWebContent(url) {
   try {
-    const timeoutPromise = setTimeout(FETCH_TIMEOUT_MS, 'Timeout');
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), FETCH_TIMEOUT_MS)
+    );
+
     const fetchPromise = (async () => {
       const agent = DISABLE_SSL_VALIDATION ? new https.Agent({ rejectUnauthorized: false }) : undefined;
       const response = await fetch(url, { agent });
@@ -225,7 +228,7 @@ async function main() {
 
     // Step 2: Search web using SearXNG with the rephrased prompt
     spinner.text = 'Searching the web';
-    await setTimeout(5000); // Add delay before search
+    await delay(500); // Add delay before search
     const searchResults = await searchWeb(searchPrompt);
     fullLog += `Search results:\n${searchResults.join('\n')}\n\n`;
 
@@ -304,7 +307,11 @@ try {
 }
 
 function summarizeContent(content, maxLength = 1000) {
-  const sentences = content.split(/[.!?]+/);
+  const sentences = []
+  for (const { segment } of splitBySentence(content)) {
+    sentences.push(segment.trim())
+  }
+
   let summary = "";
   for (const sentence of sentences) {
     if (summary.length + sentence.length > maxLength) break;
@@ -327,4 +334,8 @@ function containsContextInfo(response, context) {
   }
 
   return false;
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
