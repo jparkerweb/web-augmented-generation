@@ -212,9 +212,20 @@ Do not mention the sources of your information or that you're using any specific
     const response = await openai.chat.completions.create({
       model: mergedOptions.model,
       messages: [{ role: 'user', content: fullPrompt }],
+      temperature: 0.1,
+      stream: false
     });
 
-    return response.choices[0].message.content;
+    let responseObj = response;
+    if (typeof response === 'string' && response.includes('choices')) {
+      try {
+        responseObj = JSON.parse(response);
+      } catch (error) {
+        console.error('Failed to parse response string to object:', error);
+        throw error;
+      }
+    }
+    return responseObj.choices[0].message.content;
   } catch (error) {
     console.error(`Error in generateWithContext: ${error.message}`);
     if (error.response) {
@@ -245,9 +256,20 @@ Rephrased search query:`;
   const response = await openai.chat.completions.create({
     model: LLM_MODEL,
     messages: [{ role: 'user', content: rephrasePrompt }],
+    temperature: 0.1,
+    stream: false
   });
 
-  const searchQuery = response.choices[0].message.content.split('\n')[0].trim();
+  let responseObj = response;
+  if (typeof response === 'string' && response.includes('choices')) {
+    try {
+      responseObj = JSON.parse(response);
+    } catch (error) {
+      console.error('Failed to parse response string to object:', error);
+      throw error;
+    }
+  }
+  const searchQuery = responseObj.choices[0].message.content.split('\n')[0].trim();
   return searchQuery.length > 50 ? searchQuery.substring(0, 50) : searchQuery;
 }
 
