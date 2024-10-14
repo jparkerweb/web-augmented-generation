@@ -67,23 +67,23 @@ This Node.js application performs web-augmented generation using Ollama and web 
    ##################
    ## Ollama Local ##
    ##################
-   LLM_BASE_URL=http://localhost:11434/v1                # Base URL for the LLM API (OpenAI format)
-   LLM_API_KEY=ollama                                    # API key for the LLM (use 'ollama' for Ollama)
-   LLM_MODEL="qwen2.5:0.5b"                              # Model to use with the LLM API   
+   LLM_BASE_URL=http://localhost:11434/v1              # Base URL for the LLM API (OpenAI format)
+   LLM_API_KEY=ollama                                  # API key for the LLM (use 'ollama' for Ollama)
+   LLM_MODEL=qwen2.5:0.5b                              # Model to use with the LLM API   
 
    #################
    ## together.ai ##
    #################
-   # LLM_BASE_URL=https://api.together.xyz/v1            # Base URL for the LLM API (OpenAI format)
-   # LLM_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxx            # API key for the LLM (use 'ollama' for Ollama)
-   # LLM_MODEL="meta-llama/Llama-3.2-3B-Instruct-Turbo"  # Model to use with the LLM API   
+   # LLM_BASE_URL=https://api.together.xyz/v1          # Base URL for the LLM API (OpenAI format)
+   # LLM_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxx          # API key for the LLM (use 'ollama' for Ollama)
+   # LLM_MODEL=meta-llama/Llama-3.2-3B-Instruct-Turbo  # Model to use with the LLM API   
 
    ###############
    ## llama.cpp ##
    ###############
-   # LLM_BASE_URL=http://localhost:8080/v1               # Base URL for the LLM API (OpenAI format)
-   # LLM_API_KEY=not-needed                              # API key for the LLM (use 'ollama' for Ollama)
-   # LLM_MODEL="not-needed"                              # Model to use with the LLM API   
+   # LLM_BASE_URL=http://localhost:8080/v1             # Base URL for the LLM API (OpenAI format)
+   # LLM_API_KEY=not-needed                            # API key for the LLM (use 'ollama' for Ollama)
+   # LLM_MODEL=not-needed                              # Model to use with the LLM API   
    ```
 
 ## LLM Configuration
