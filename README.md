@@ -8,6 +8,7 @@ This Node.js application performs web-augmented generation using Ollama and web 
 - Searches the web using SearXNG
 - Fetches and summarizes content from search results
 - Generates responses using Ollama or any LLM via OpenAI API calls, incorporating web-sourced information
+- Supports streaming responses for real-time output
 - Logs detailed information about the process
 
 ## Prerequisites
@@ -46,6 +47,7 @@ This Node.js application performs web-augmented generation using Ollama and web 
    LLM_BASE_URL=http://localhost:11434/v1
    LLM_API_KEY=ollama
    LLM_MODEL=qwen2.5:1.5b
+   LLM_STREAM_RESPONSE=true
    ```
 
    - `NUM_URLS`: Number of search results to process
@@ -54,6 +56,7 @@ This Node.js application performs web-augmented generation using Ollama and web 
    - `SEARXNG_FORMAT`: Format for SearXNG results, either 'html' or 'json'
    - `FETCH_TIMEOUT_MS`: Timeout for fetching web content in milliseconds
    - `DISABLE_SSL_VALIDATION`: Set to 'true' to disable SSL certificate validation (use with caution)
+   - `LLM_STREAM_RESPONSE`: Set to 'true' to enable streaming responses, 'false' for single response
    - `LLM_BASE_URL`: Base URL for the LLM API (OpenAI format)
    - `LLM_API_KEY`: API key for the LLM (use 'ollama' for Ollama)
    - `LLM_MODEL`: Model to use with the LLM API
@@ -213,6 +216,17 @@ Now you have a local SearXNG instance running on port 8787 with JSON output enab
   This would append `&key=abcdef123456&language=en` to the SearXNG search URL, and the application will expect and parse JSON responses from SearXNG.
 
 - `DISABLE_SSL_VALIDATION`: Set to 'true' to disable SSL certificate validation (default: false, use with caution)
+
+- `LLM_STREAM_RESPONSE`: This field determines whether the LLM responses should be streamed in real-time or returned as a single response:
+  - 'true': The application will stream the LLM responses, providing real-time output
+  - 'false': The application will return the LLM response as a single block of text
+
+  Example usage in .env file:
+  ```
+  LLM_STREAM_RESPONSE=true
+  ```
+
+  This would enable streaming of LLM responses, providing a more interactive experience.
 
 ---
 

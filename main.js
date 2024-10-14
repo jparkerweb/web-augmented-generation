@@ -211,25 +211,40 @@ Do not mention the sources of your information or that you're using any specific
   });
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: mergedOptions.model,
-      messages: [{ role: 'user', content: fullPrompt }],
-      temperature: 0.1,
-      stream: true
-    });
+    const streamResponse = process.env.LLM_STREAM_RESPONSE === 'true';
 
-    let fullResponse = '';
-    console.log(chalk.green('\nResponse:'));
+    if (streamResponse) {
+      const stream = await openai.chat.completions.create({
+        model: mergedOptions.model,
+        messages: [{ role: 'user', content: fullPrompt }],
+        temperature: 0.1,
+        stream: true
+      });
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      fullResponse += content;
-      process.stdout.write(chalk.whiteBright(content));
+      let fullResponse = '';
+      console.log(chalk.green('\nResponse:'));
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        fullResponse += content;
+        process.stdout.write(chalk.whiteBright(content));
+      }
+
+      console.log('\n'); // Add a newline after the streamed response
+      return fullResponse;
+    } else {
+      const response = await openai.chat.completions.create({
+        model: mergedOptions.model,
+        messages: [{ role: 'user', content: fullPrompt }],
+        temperature: 0.1,
+      });
+
+      const fullResponse = response.choices[0].message.content;
+      console.log(chalk.green('\nResponse:'));
+      console.log(chalk.whiteBright(fullResponse));
+      console.log('\n');
+      return fullResponse;
     }
-
-    console.log('\n'); // Add a newline after the streamed response
-
-    return fullResponse;
   } catch (error) {
     console.error(chalk.red(`Error in generateWithContext: ${error.message}`));
     if (error.response) {
