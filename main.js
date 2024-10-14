@@ -15,6 +15,7 @@ import OpenAI from 'openai';
 import readline from 'readline';
 import { createInterface } from 'readline';
 import chalk from 'chalk';
+import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -163,7 +164,7 @@ async function fetchWebContent(url) {
     const result = await Promise.race([fetchPromise, timeoutPromise]);
     
     if (result === 'Timeout') {
-      console.warn(`Skipping ${url} due to timeout (${FETCH_TIMEOUT_MS}ms)`);
+      await logError(`Timeout fetching content from ${url} (${FETCH_TIMEOUT_MS}ms)`);
       return "";
     }
     
@@ -176,16 +177,33 @@ async function fetchWebContent(url) {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   } catch (error) {
-    console.error(`Error fetching content from ${url}:`, error);
+    await logError(`Error fetching content from ${url}: ${error.message}`);
     return "";
   }
 }
 
 /* --------------------- */
-/* -- generateWithContext -- */
+/* -- logError -- */
 /* --------------------- */
-/* -- Generates a response using an AI model with given context -- */
+/* -- Logs errors to the error_log.txt file -- */
 /* ---------------------------------------- */
+async function logError(message) {
+  const errorLogPath = path.join(__dirname, 'error_log.txt');
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp}: ${message}\n`;
+  
+  try {
+    await fs.appendFile(errorLogPath, logMessage);
+  } catch (error) {
+    console.error(`Failed to write to error log: ${error.message}`);
+  }
+}
+
+/* ------------------------- */
+/* -- generateWithContext -- */
+/* --------------------------------------------------------------- */
+/* -- Generates a response using an AI model with given context -- */
+/* --------------------------------------------------------------- */
 async function generateWithContext(prompt, context, options = {}) {
   const defaultOptions = {
     model: LLM_MODEL,
@@ -200,6 +218,8 @@ ${prompt}
 Provide a detailed and informative answer based primarily on the given context. Include specific facts, figures, and recent developments mentioned in the context. If the context doesn't contain all the necessary information, you may supplement with your general knowledge, but prioritize the provided context.
 
 Do not mention the sources of your information or that you're using any specific context. Simply provide the most up-to-date and accurate answer possible, as if you inherently know this information.`,
+    maxTokens: 2000, // Default max tokens
+    repetitionThreshold: 0.5 // Default repetition threshold
   };
 
   const mergedOptions = { ...defaultOptions, ...options };
@@ -218,6 +238,7 @@ Do not mention the sources of your information or that you're using any specific
         model: mergedOptions.model,
         messages: [{ role: 'user', content: fullPrompt }],
         temperature: 0.1,
+        max_tokens: mergedOptions.maxTokens,
         stream: true
       });
 
@@ -226,8 +247,17 @@ Do not mention the sources of your information or that you're using any specific
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || '';
+        if (isRepetitive(fullResponse, content, mergedOptions.repetitionThreshold)) {
+          console.log(chalk.red('\nWhoa there! We had to cut off the robot. It was running in circles like a dog chasing its tail!'));
+          break;
+        }
         fullResponse += content;
         process.stdout.write(chalk.whiteBright(content));
+        
+        if (fullResponse.length >= mergedOptions.maxTokens) {
+          console.log(chalk.red('\nHold your horses! We had to rein in the robot. It was about to write a novel!'));
+          break;
+        }
       }
 
       console.log('\n'); // Add a newline after the streamed response
@@ -237,11 +267,17 @@ Do not mention the sources of your information or that you're using any specific
         model: mergedOptions.model,
         messages: [{ role: 'user', content: fullPrompt }],
         temperature: 0.1,
+        max_tokens: mergedOptions.maxTokens,
       });
 
       const fullResponse = response.choices[0].message.content;
       console.log(chalk.green('\nResponse:'));
       console.log(chalk.whiteBright(fullResponse));
+      
+      if (fullResponse.length >= mergedOptions.maxTokens) {
+        console.log(chalk.red('\nPhew! We had to put the brakes on our chatty robot. It was about to break the internet!'));
+      }
+      
       console.log('\n');
       return fullResponse;
     }
@@ -253,6 +289,35 @@ Do not mention the sources of your information or that you're using any specific
     }
     throw error;
   }
+}
+
+/* --------------------- */
+/* -- isRepetitive -- */
+/* --------------------- */
+/* -- Checks if the new content is repetitive -- */
+/* ---------------------------------------- */
+function isRepetitive(existingContent, newContent, threshold) {
+  if (existingContent.length === 0) return false;
+  
+  const lastChunk = existingContent.slice(-newContent.length);
+  const similarity = calculateSimilarity(lastChunk, newContent);
+  
+  return similarity > threshold;
+}
+
+/* --------------------- */
+/* -- calculateSimilarity -- */
+/* --------------------- */
+/* -- Calculates the similarity between two strings -- */
+/* ---------------------------------------- */
+function calculateSimilarity(str1, str2) {
+  const set1 = new Set(str1.toLowerCase().split(' '));
+  const set2 = new Set(str2.toLowerCase().split(' '));
+  
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+  
+  return intersection.size / union.size;
 }
 
 /* --------------------- */
@@ -367,6 +432,17 @@ async function main() {
   } else {
     originalPrompt = args.join(" ");
   }
+
+  // ascii art
+  const colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+  console.log(chalk[randomColor](`
+▐▓█▀▀▀▀▀▀▀▀▀█▓▌░▄▄▄▄▄░
+▐▓█░░W░A░G░░█▓▌░█▄▄▄█░
+▐▓█░░░░░░░░░█▓▌░█▄▄▄█░
+▐▓█▄▄▄▄▄▄▄▄▄█▓▌░█████░
+░░░░▄▄███▄▄░░░░░█████░ 
+`));
 
   const spinner = ora('Processing').start();
 
@@ -494,24 +570,33 @@ function summarizeContent(content, maxLength = 1000) {
   return summary.trim();
 }
 
-/* --------------------- */
+/* ------------------------- */
 /* -- containsContextInfo -- */
-/* --------------------- */
+/* --------------------------------------------------------------------------------------- */
 /* -- Checks if the generated response contains sufficient information from the context -- */
-/* ---------------------------------------- */
+/* --------------------------------------------------------------------------------------- */
 function containsContextInfo(response, context) {
+  // Split the context into words and filter out short words (<= 5 characters)
   const contextKeywords = context.split(/\s+/).filter(word => word.length > 5);
+  
+  // Remove duplicate keywords
   const uniqueKeywords = [...new Set(contextKeywords)];
+  
+  // Set a threshold for the minimum number of keyword matches required
   const keywordThreshold = Math.min(10, uniqueKeywords.length);
+  
   let matchCount = 0;
 
+  // Check if the response contains each keyword
   for (const keyword of uniqueKeywords) {
     if (response.toLowerCase().includes(keyword.toLowerCase())) {
       matchCount++;
+      // If the match count reaches the threshold, return true
       if (matchCount >= keywordThreshold) return true;
     }
   }
 
+  // If the match count does not reach the threshold, return false
   return false;
 }
 
