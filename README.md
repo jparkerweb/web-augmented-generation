@@ -48,11 +48,11 @@ This Node.js application performs web-augmented generation using Ollama and web 
    LLM_MODEL=qwen2.5:1.5b
    ```
 
-   - `NUM_URLS`: Number of search results to process (default: 5)
+   - `NUM_URLS`: Number of search results to process
    - `SEARXNG_URL`: URL of the SearXNG instance to use for web searches
    - `SEARXNG_URL_EXTRA_PARAMETER`: Additional URL parameters for SearXNG requests (e.g., authentication key)
-   - `SEARXNG_FORMAT`: Format for SearXNG results, either 'html' or 'json' (default: json)
-   - `FETCH_TIMEOUT_MS`: Timeout for fetching web content in milliseconds (default: 5000)
+   - `SEARXNG_FORMAT`: Format for SearXNG results, either 'html' or 'json'
+   - `FETCH_TIMEOUT_MS`: Timeout for fetching web content in milliseconds
    - `DISABLE_SSL_VALIDATION`: Set to 'true' to disable SSL certificate validation (use with caution)
    - `LLM_BASE_URL`: Base URL for the LLM API (OpenAI format)
    - `LLM_API_KEY`: API key for the LLM (use 'ollama' for Ollama)
