@@ -7,7 +7,7 @@ This Node.js application performs web-augmented generation using Ollama and web 
 - Rephrases user queries for optimal web searching
 - Searches the web using SearXNG
 - Fetches and summarizes content from search results
-- Generates responses using Ollama, incorporating web-sourced information
+- Generates responses using Ollama or any LLM via OpenAI API calls, incorporating web-sourced information
 - Logs detailed information about the process
 
 ## Prerequisites
