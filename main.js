@@ -344,13 +344,30 @@ function countdown(seconds) {
 /* -- Orchestrates the web search and response generation process -- */
 /* ---------------------------------------- */
 async function main() {
-  const args = process.argv.slice(2).filter(arg => arg !== '--from-ask-script');
+  let args = process.argv.slice(2).filter(arg => arg !== '--from-ask-script');
+  let originalPrompt;
+
   if (args.length < 1) {
-    console.error("Usage: node main.js <prompt>");
-    process.exit(1);
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    originalPrompt = await new Promise(resolve => {
+      rl.question(chalk.cyan('Please enter your prompt: '), answer => {
+        rl.close();
+        resolve(answer.trim());
+      });
+    });
+
+    if (!originalPrompt) {
+      console.error(chalk.red("No prompt provided. Exiting."));
+      process.exit(1);
+    }
+  } else {
+    originalPrompt = args.join(" ");
   }
 
-  const originalPrompt = args.join(" ");
   const spinner = ora('Processing').start();
 
   try {

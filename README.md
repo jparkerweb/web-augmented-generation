@@ -115,11 +115,13 @@ The application will use these settings to make API calls to the language model 
 
 ## Usage
 
-Run the application with a query:
+Run the application with or without a query:
 
 ```
 node main.js "Your question or prompt here"
 ```
+
+_If you don't provide a query, the application will prompt you to enter one._
 
 The application will:
 1. Rephrase the query for better search results
