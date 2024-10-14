@@ -1,6 +1,7 @@
+process.removeAllListeners('warning');
+
 import { Readability } from '@mozilla/readability';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import ollama from 'ollama';
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -10,21 +11,17 @@ import ora from 'ora';
 import https from 'https';
 import * as cheerio from 'cheerio';
 import { splitBySentence } from "string-segmenter"
+import OpenAI from 'openai';
+import readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config({ path: `${__dirname}/.env` });
 
-if (process.env.OLLAMA_BASE_URL) {
-  ollama.baseUrl = process.env.OLLAMA_BASE_URL;
-}
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 const SEARXNG_URL = process.env.SEARXNG_URL;
 const NUM_URLS = parseInt(process.env.NUM_URLS) || 5;
 const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS) || 5000;
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 const DISABLE_SSL_VALIDATION = process.env.DISABLE_SSL_VALIDATION === 'true';
 const SEARXNG_FORMAT = process.env.SEARXNG_FORMAT || 'html';
 const SEARXNG_URL_EXTRA_PARAMETER = process.env.SEARXNG_URL_EXTRA_PARAMETER || '';
@@ -32,11 +29,22 @@ const SEARXNG_URL_EXTRA_PARAMETER = process.env.SEARXNG_URL_EXTRA_PARAMETER || '
 const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 2000;
 
+const LLM_BASE_URL = process.env.LLM_BASE_URL;
+const LLM_API_KEY = process.env.LLM_API_KEY;
+const LLM_MODEL = process.env.LLM_MODEL;
+
+const runningFromAskScript = process.argv.includes('--from-ask-script');
+
 if (!SEARXNG_URL) {
   console.error("SEARXNG_URL is not set. Please check your .env file.");
   process.exit(1);
 }
 
+/* --------------------- */
+/* -- fallbackSearch -- */
+/* --------------------- */
+/* -- Implements a fallback search method when the primary search fails -- */
+/* ---------------------------------------- */
 async function fallbackSearch(query) {
   // Implement a fallback search method here
   // This could be a different search API or a simpler web scraping approach
@@ -44,6 +52,11 @@ async function fallbackSearch(query) {
   // Return an array of URLs or an empty array if no results
 }
 
+/* --------------------- */
+/* -- searchWeb -- */
+/* --------------------- */
+/* -- Searches the web using SearXNG and returns a list of URLs -- */
+/* ---------------------------------------- */
 async function searchWeb(query) {
   const searchUrl = `${SEARXNG_URL}/search?q=${encodeURIComponent(query)}${SEARXNG_FORMAT === 'json' ? '&format=json' : ''}${SEARXNG_URL_EXTRA_PARAMETER ? '&' + SEARXNG_URL_EXTRA_PARAMETER : ''}`;
   
@@ -97,6 +110,11 @@ async function searchWeb(query) {
   }
 }
 
+/* --------------------- */
+/* -- extractLinksFromHTML -- */
+/* --------------------- */
+/* -- Extracts links from HTML content using Cheerio -- */
+/* ---------------------------------------- */
 function extractLinksFromHTML(html) {
   const $ = cheerio.load(html);
   const links = [];
@@ -112,6 +130,11 @@ function extractLinksFromHTML(html) {
   return links.slice(0, NUM_URLS);
 }
 
+/* --------------------- */
+/* -- fetchWebContent -- */
+/* --------------------- */
+/* -- Fetches and extracts the main content from a given URL -- */
+/* ---------------------------------------- */
 async function fetchWebContent(url) {
   try {
     const timeoutPromise = new Promise((_, reject) => 
@@ -156,9 +179,14 @@ async function fetchWebContent(url) {
   }
 }
 
+/* --------------------- */
+/* -- generateWithContext -- */
+/* --------------------- */
+/* -- Generates a response using an AI model with given context -- */
+/* ---------------------------------------- */
 async function generateWithContext(prompt, context, options = {}) {
   const defaultOptions = {
-    model: OLLAMA_MODEL,
+    model: LLM_MODEL,
     prompt: `You are a helpful assistant with access to the following information:
 
 ${context}
@@ -175,13 +203,33 @@ Do not mention the sources of your information or that you're using any specific
   const mergedOptions = { ...defaultOptions, ...options };
   const fullPrompt = mergedOptions.prompt;
 
-  const response = await ollama.chat({
-    ...mergedOptions,
-    messages: [{ role: 'user', content: fullPrompt }],
+  const openai = new OpenAI({
+    apiKey: LLM_API_KEY,
+    baseURL: LLM_BASE_URL,
   });
-  return response.message.content;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: mergedOptions.model,
+      messages: [{ role: 'user', content: fullPrompt }],
+    });
+
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error(`Error in generateWithContext: ${error.message}`);
+    if (error.response) {
+      console.error(`Response status: ${error.response.status}`);
+      console.error(`Response data: ${JSON.stringify(error.response.data)}`);
+    }
+    throw error; // Re-throw the error to be caught in the main function
+  }
 }
 
+/* --------------------- */
+/* -- rephraseForSearch -- */
+/* --------------------- */
+/* -- Rephrases a given prompt into a concise search query -- */
+/* ---------------------------------------- */
 async function rephraseForSearch(prompt) {
   const rephrasePrompt = `Rephrase the following question into a short, concise search query that will yield the most relevant results from a search engine. The query should be 2-15 words long and focused on gathering information to answer the original question. Do not include explanations or multiple options, just provide the best single search query.
 
@@ -189,20 +237,73 @@ Original question: "${prompt}"
 
 Rephrased search query:`;
 
-  const response = await ollama.chat({
-    model: OLLAMA_MODEL,
+  const openai = new OpenAI({
+    apiKey: LLM_API_KEY,
+    baseURL: LLM_BASE_URL,
+  });
+
+  const response = await openai.chat.completions.create({
+    model: LLM_MODEL,
     messages: [{ role: 'user', content: rephrasePrompt }],
   });
-  
-  // Extract only the first line of the response
-  const searchQuery = response.message.content.split('\n')[0].trim();
-  
-  // If the search query is still too long, truncate it
+
+  const searchQuery = response.choices[0].message.content.split('\n')[0].trim();
   return searchQuery.length > 50 ? searchQuery.substring(0, 50) : searchQuery;
 }
 
+/* --------------------- */
+/* -- countdown -- */
+/* --------------------- */
+/* -- Displays a countdown timer and waits for any key press -- */
+/* ---------------------------------------- */
+function countdown(seconds) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    readline.emitKeypressEvents(process.stdin);
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+    }
+
+    let remainingSeconds = seconds;
+
+    console.log(`\nPress any key to exit or wait ${seconds} seconds...`);
+
+    const timer = setInterval(() => {
+      process.stdout.write(`\r${remainingSeconds} seconds remaining...`);
+      remainingSeconds--;
+
+      if (remainingSeconds < 0) {
+        clearInterval(timer);
+        rl.close();
+        if (process.stdin.isTTY) {
+          process.stdin.setRawMode(false);
+        }
+        resolve('timeout');
+      }
+    }, 1000);
+
+    process.stdin.on('keypress', () => {
+      clearInterval(timer);
+      rl.close();
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      resolve('keypress');
+    });
+  });
+}
+
+/* --------------------- */
+/* -- main -- */
+/* --------------------- */
+/* -- Orchestrates the web search and response generation process -- */
+/* ---------------------------------------- */
 async function main() {
-  const args = process.argv.slice(2);
+  const args = process.argv.slice(2).filter(arg => arg !== '--from-ask-script');
   if (args.length < 1) {
     console.error("Usage: node main.js <prompt>");
     process.exit(1);
@@ -287,25 +388,44 @@ Provide your answer as if you inherently know the information, without referenci
 
     // Append the generated response to the log file
     await fs.appendFile(`${__dirname}/log.txt`, `\nGenerated response:\n${response}\n`);
+
+    // Only run the countdown if executed from an ask script
+    if (runningFromAskScript) {
+      console.log("\n");
+      const result = await countdown(60);
+      if (result === 'keypress') {
+        console.log('\n');
+      }
+    }
   } catch (error) {
     spinner.fail('An error occurred');
     // Write fresh error information to error_log.txt
     await fs.writeFile(`${__dirname}/error_log.txt`, `${new Date().toISOString()}: ${error.stack}\n`, 'utf8');
     console.error("An error occurred. Check error_log.txt for details.");
   } finally {
-    // Ensure the program exits
+    // Ensure the process exits
     process.exit(0);
   }
 }
 
-// Use top-level await to handle the promise rejection
-try {
-  await main();
-} catch (error) {
-  console.error("Unhandled error in main:", error);
-  process.exit(1);
+if (runningFromAskScript) {
+  try {
+    await main();
+  } catch (error) {
+    console.error("Unhandled error in main:", error);
+  }
+} else {
+  main().catch(error => {
+    console.error("Unhandled error in main:", error);
+    process.exit(1);
+  });
 }
 
+/* --------------------- */
+/* -- summarizeContent -- */
+/* --------------------- */
+/* -- Summarizes content by truncating to a specified maximum length -- */
+/* ---------------------------------------- */
 function summarizeContent(content, maxLength = 1000) {
   const sentences = []
   for (const { segment } of splitBySentence(content)) {
@@ -320,6 +440,11 @@ function summarizeContent(content, maxLength = 1000) {
   return summary.trim();
 }
 
+/* --------------------- */
+/* -- containsContextInfo -- */
+/* --------------------- */
+/* -- Checks if the generated response contains sufficient information from the context -- */
+/* ---------------------------------------- */
 function containsContextInfo(response, context) {
   const contextKeywords = context.split(/\s+/).filter(word => word.length > 5);
   const uniqueKeywords = [...new Set(contextKeywords)];
@@ -336,6 +461,11 @@ function containsContextInfo(response, context) {
   return false;
 }
 
+/* --------------------- */
+/* -- delay -- */
+/* --------------------- */
+/* -- Utility function to introduce a delay -- */
+/* ---------------------------------------- */
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -37,24 +37,53 @@ This Node.js application performs web-augmented generation using Ollama and web 
 
 4. Edit the `.env` file and update the values as needed:
    ```
-   OLLAMA_BASE_URL=http://localhost:11434
+   NUM_URLS=5
    SEARXNG_URL=https://searxng.acme.org
    SEARXNG_URL_EXTRA_PARAMETER="key=your_auth_key_here"
-   NUM_URLS=5
+   SEARXNG_FORMAT=html
    FETCH_TIMEOUT_MS=5000
-   OLLAMA_MODEL=llama3.2
    DISABLE_SSL_VALIDATION=false
-   SEARXNG_FORMAT=json
+   LLM_BASE_URL=http://localhost:11434/v1
+   LLM_API_KEY=ollama
+   LLM_MODEL=llama3.2:1b
    ```
 
-   - `OLLAMA_BASE_URL`: URL of your Ollama server
-   - `OLLAMA_MODEL`: The name of the Ollama model to use (default: llama3.2)
    - `NUM_URLS`: Number of search results to process (default: 5)
    - `SEARXNG_URL`: URL of the SearXNG instance to use for web searches
    - `SEARXNG_URL_EXTRA_PARAMETER`: Additional URL parameters for SearXNG requests (e.g., authentication key)
    - `SEARXNG_FORMAT`: Format for SearXNG results, either 'html' or 'json' (default: json)
    - `FETCH_TIMEOUT_MS`: Timeout for fetching web content in milliseconds (default: 5000)
    - `DISABLE_SSL_VALIDATION`: Set to 'true' to disable SSL certificate validation (use with caution)
+   - `LLM_BASE_URL`: Base URL for the LLM API (OpenAI format)
+   - `LLM_API_KEY`: API key for the LLM (use 'ollama' for Ollama)
+   - `LLM_MODEL`: Model to use with the LLM API
+
+## LLM Configuration
+
+This application uses the OpenAI API format for language model interactions. You can configure it to work with Ollama or other OpenAI-compatible APIs. Here's how to set it up:
+
+### For Ollama:
+
+1. Make sure Ollama is running at the URL specified in your `.env` file.
+2. Set the following variables in your `.env` file:
+   ```
+   LLM_BASE_URL=http://localhost:11434/v1
+   LLM_API_KEY=ollama
+   LLM_MODEL=llama3.2:1b
+   ```
+   Replace `llama3.2:1b` with the name of the model you want to use in Ollama.
+
+### For OpenAI or other compatible APIs:
+
+1. Set the following variables in your `.env` file:
+   ```
+   LLM_BASE_URL=https://api.openai.com/v1
+   LLM_API_KEY=your_api_key_here
+   LLM_MODEL=gpt-3.5-turbo
+   ```
+   Replace `your_api_key_here` with your actual API key, and `gpt-3.5-turbo` with the model you want to use.
+
+The application will use these settings to make API calls to the language model for tasks such as rephrasing queries and generating responses.
 
 ## Usage
 
@@ -291,3 +320,61 @@ You don't need to provide the question or prompt as a command-line argument. The
 These scripts provide a convenient way to interact with the application without having to navigate to the project directory or manually run `node main.js` each time.
 
 ![ask-scripts](./ask-scripts/ask.gif)
+
+---
+
+## Hosting Ollama via NGINX Reverse Proxy
+
+If you want to host Ollama behind an NGINX reverse proxy, you can use the following configuration as a starting point. This setup includes SSL and basic API key authentication.
+
+```nginx
+# -------------------------
+# -- ollama.yourdomain.com --
+# -------------------------
+upstream ollama {
+    server               127.0.0.1:11434;
+}
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name ollama.yourdomain.com;
+    ssl_certificate         C:/Certbot/live/ollama.yourdomain.com/fullchain.pem;
+    ssl_certificate_key     C:/Certbot/live/ollama.yourdomain.com/privkey.pem;
+
+    location / {
+        # Check if the Authorization header is present and has the correct Bearer token / API Key
+        set $token "Bearer MY_PRIVATE_API_KEY";
+        if ($http_authorization != $token) {
+            return 401 "Unauthorized";
+        }
+
+        # The localhost headers are to simulate the forwarded request as coming from localhost
+        # so we dont have to set the Ollama origins as *
+        proxy_set_header  Host "127.0.0.1";
+        proxy_set_header  X-Real-IP "127.0.0.1";
+        proxy_set_header  X-Forwarded-For "127.0.0.1";
+        proxy_set_header  X-Forwarded-Proto $scheme;
+        proxy_pass        http://ollama;  # Forward request to the actual web service
+    }
+}
+```
+
+This configuration does the following:
+
+1. Sets up an upstream server for Ollama running on localhost port 11434.
+2. Configures the server to listen on both HTTP (80) and HTTPS (443) ports.
+3. Specifies the SSL certificate and key locations.
+4. Implements a basic API key check using the Authorization header.
+5. Forwards requests to the Ollama service, simulating them as coming from localhost.
+
+Remember to replace `MY_PRIVATE_API_KEY` with your actual API key, and ensure that the SSL certificate paths are correct for your system.
+
+When using this configuration, update your `.env` file to point to your NGINX-proxied Ollama instance:
+
+```
+LLM_BASE_URL=https://ollama.yourdomain.com/v1
+LLM_API_KEY=MY_PRIVATE_API_KEY
+LLM_MODEL=llama3.2:1b
+```
+
+This setup allows you to securely expose your Ollama instance to the internet while maintaining control over access through API key authentication.

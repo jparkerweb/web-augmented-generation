@@ -11,5 +11,5 @@ parent_dir="$( cd "$script_dir/.." && pwd )"
 echo "Enter your prompt:"
 read user_prompt
 
-# Run main.js with the user's prompt
-node "$parent_dir/main.js" "$user_prompt"
+# Run main.js with the user's prompt and the --from-ask-script flag
+node --no-warnings "$parent_dir/main.js" --from-ask-script "$user_prompt"
