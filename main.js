@@ -13,6 +13,8 @@ import * as cheerio from 'cheerio';
 import { splitBySentence } from "string-segmenter"
 import OpenAI from 'openai';
 import readline from 'readline';
+import { createInterface } from 'readline';
+import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -209,30 +211,32 @@ Do not mention the sources of your information or that you're using any specific
   });
 
   try {
-    const response = await openai.chat.completions.create({
+    const stream = await openai.chat.completions.create({
       model: mergedOptions.model,
       messages: [{ role: 'user', content: fullPrompt }],
       temperature: 0.1,
-      stream: false
+      stream: true
     });
 
-    let responseObj = response;
-    if (typeof response === 'string' && response.includes('choices')) {
-      try {
-        responseObj = JSON.parse(response);
-      } catch (error) {
-        console.error('Failed to parse response string to object:', error);
-        throw error;
-      }
+    let fullResponse = '';
+    console.log(chalk.green('\nResponse:'));
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      fullResponse += content;
+      process.stdout.write(chalk.whiteBright(content));
     }
-    return responseObj.choices[0].message.content;
+
+    console.log('\n'); // Add a newline after the streamed response
+
+    return fullResponse;
   } catch (error) {
-    console.error(`Error in generateWithContext: ${error.message}`);
+    console.error(chalk.red(`Error in generateWithContext: ${error.message}`));
     if (error.response) {
-      console.error(`Response status: ${error.response.status}`);
-      console.error(`Response data: ${JSON.stringify(error.response.data)}`);
+      console.error(chalk.red(`Response status: ${error.response.status}`));
+      console.error(chalk.red(`Response data: ${JSON.stringify(error.response.data)}`));
     }
-    throw error; // Re-throw the error to be caught in the main function
+    throw error;
   }
 }
 
@@ -394,19 +398,15 @@ Provide your answer as if you inherently know the information, without referenci
     await fs.writeFile(`${__dirname}/log.txt`, fullLog, 'utf8');
 
     // Step 6: Generate and write out the answer
-    spinner.text = 'Generating response';
+    spinner.stop(); // Stop the spinner before streaming
     let response = await generateWithContext(originalPrompt, combinedContent, { prompt: systemPrompt });
     
     // Check if the response is too short or doesn't contain specific information from the context
     if (response.length < 100 || !containsContextInfo(response, combinedContent)) {
-      spinner.text = 'Regenerating response with emphasis on context';
+      console.log(chalk.yellow('Expanded response with emphasis on context:'));
       const regenerationPrompt = `Your previous answer did not sufficiently use the provided context. Please provide a more detailed explanation for the question: ${originalPrompt}\n\nEnsure you include specific information from the given context in your response.`;
       response = await generateWithContext(regenerationPrompt, combinedContent);
     }
-
-    spinner.stop();
-    console.log("\nGenerated response:");
-    console.log(response);
 
     // Append the generated response to the log file
     await fs.appendFile(`${__dirname}/log.txt`, `\nGenerated response:\n${response}\n`);
