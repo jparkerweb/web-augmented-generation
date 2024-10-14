@@ -45,7 +45,7 @@ This Node.js application performs web-augmented generation using Ollama and web 
    DISABLE_SSL_VALIDATION=false
    LLM_BASE_URL=http://localhost:11434/v1
    LLM_API_KEY=ollama
-   LLM_MODEL=llama3.2:1b
+   LLM_MODEL=qwen2.5:1.5b
    ```
 
    - `NUM_URLS`: Number of search results to process (default: 5)
