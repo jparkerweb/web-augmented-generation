@@ -1,6 +1,6 @@
 {
   "name": "web-augmented-generation",
-  "description": "Web Augmented Generation using Ollama and SearXNG",
+  "description": "Web Augmented Generation using SearXNG and any OpenAI API compatable LLM (Ollama, etc.)",
   "version": "1.1.0",
   "type": "module",
   "main": "main.js",
