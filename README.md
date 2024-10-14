@@ -14,7 +14,7 @@ This Node.js application performs web-augmented generation using Ollama and web 
 
 - Node.js (version 16 or higher)
 - npm (Node Package Manager)
-- Ollama server running locally or remotely
+- Ollama server running locally or remotely (or any LLM Inference Service that is compatible with OpenAI API calls)
 - Access to a SearXNG instance
 
 ## Setup
