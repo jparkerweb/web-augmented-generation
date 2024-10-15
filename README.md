@@ -11,6 +11,8 @@ This Node.js application performs web-augmented generation using Ollama and web 
 - Supports streaming responses for real-time output
 - Logs detailed information about the process
 
+![WAG](./wag.jpg)
+
 ## Prerequisites
 
 - Node.js (version 16 or higher)
