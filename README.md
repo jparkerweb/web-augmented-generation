@@ -234,7 +234,8 @@ Now you have a local SearXNG instance running on port 8787 with JSON output enab
 
 ---
 
-## Example Nginx Configuration with an auth key serving SearXNG on port 8787
+## Example Nginx Configuration with Authentication Key
+ _(example serving SearXNG on port 8787)_
 
 ```nginx
     server {
