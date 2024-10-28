@@ -422,3 +422,9 @@ LLM_MODEL=llama3.2:1b
 ```
 
 This setup allows you to securely expose your Ollama instance to the internet while maintaining control over access through API key authentication.
+
+---
+
+## Appreciation
+If you enjoy this plugin please consider sending me a tip to support my work 😀
+### [🍵 tip me here](https://ko-fi.com/jparkerweb)
