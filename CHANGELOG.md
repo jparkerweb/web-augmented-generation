@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2024-10-31
+
+### Fixed
+- Fixed non-streaming response calls
+  - missing stream: false parameter
+  - incorrect response parsing for streaming responses (now handles both string and JSON responses)
+
+---
+
 ## [1.1.0] - 2024-10-14
 
 ### Added
