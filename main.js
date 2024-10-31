@@ -268,9 +268,12 @@ Do not mention the sources of your information or that you're using any specific
         messages: [{ role: 'user', content: fullPrompt }],
         temperature: 0.1,
         max_tokens: mergedOptions.maxTokens,
+        stream: false
       });
 
-      const fullResponse = response.choices[0].message.content;
+      const fullResponse = typeof response === 'string' 
+        ? JSON.parse(response).choices[0].message.content
+        : response.choices[0].message.content;
       console.log(chalk.green('\nResponse:'));
       console.log(chalk.whiteBright(fullResponse));
       
