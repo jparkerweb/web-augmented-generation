@@ -426,5 +426,5 @@ This setup allows you to securely expose your Ollama instance to the internet wh
 ---
 
 ## Appreciation
-If you enjoy this plugin please consider sending me a tip to support my work 😀
-### [🍵 tip me here](https://ko-fi.com/jparkerweb)
+If you enjoy this project please consider sending me a tip to support my work 😀
+# [🍵 tip me here](https://ko-fi.com/jparkerweb)
