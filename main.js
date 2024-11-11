@@ -525,7 +525,7 @@ Provide your answer as if you inherently know the information, without referenci
     // Only run the countdown if executed from an ask script
     if (runningFromAskScript) {
       console.log("\n");
-      const result = await countdown(60);
+      const result = await countdown(60 * 3);
       if (result === 'keypress') {
         console.log('\n');
       }
