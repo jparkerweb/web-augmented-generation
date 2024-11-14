@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2024-11-13
+
+### Added
+- Intelligent Semantic Chunk Matching of scraped web content using `chunk-match` library (optional)
+- Estimates token count using `llama3-tokenizer-js`
+
 ## [1.1.1] - 2024-10-31
 
 ### Fixed

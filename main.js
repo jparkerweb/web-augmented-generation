@@ -16,6 +16,8 @@ import readline from 'readline';
 import { createInterface } from 'readline';
 import chalk from 'chalk';
 import path from 'path';
+import { matchChunks } from 'chunk-match';
+import llama3Tokenizer from 'llama3-tokenizer-js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,11 +45,11 @@ if (!SEARXNG_URL) {
   process.exit(1);
 }
 
-/* --------------------- */
+/* -------------------- */
 /* -- fallbackSearch -- */
-/* --------------------- */
+/* ----------------------------------------------------------------------- */
 /* -- Implements a fallback search method when the primary search fails -- */
-/* ---------------------------------------- */
+/* ----------------------------------------------------------------------- */
 async function fallbackSearch(query) {
   // Implement a fallback search method here
   // This could be a different search API or a simpler web scraping approach
@@ -55,9 +57,9 @@ async function fallbackSearch(query) {
   // Return an array of URLs or an empty array if no results
 }
 
-/* --------------------- */
+/* --------------- */
 /* -- searchWeb -- */
-/* --------------------- */
+/* --------------------------------------------------------------- */
 /* -- Searches the web using SearXNG and returns a list of URLs -- */
 /* ---------------------------------------- */
 async function searchWeb(query) {
@@ -113,11 +115,11 @@ async function searchWeb(query) {
   }
 }
 
-/* --------------------- */
+/* -------------------------- */
 /* -- extractLinksFromHTML -- */
-/* --------------------- */
+/* ---------------------------------------------------- */
 /* -- Extracts links from HTML content using Cheerio -- */
-/* ---------------------------------------- */
+/* ---------------------------------------------------- */
 function extractLinksFromHTML(html) {
   const $ = cheerio.load(html);
   const links = [];
@@ -135,40 +137,57 @@ function extractLinksFromHTML(html) {
 
 /* --------------------- */
 /* -- fetchWebContent -- */
-/* --------------------- */
+/* ------------------------------------------------------------ */
 /* -- Fetches and extracts the main content from a given URL -- */
-/* ---------------------------------------- */
+/* ------------------------------------------------------------ */
 async function fetchWebContent(url) {
   try {
+    // Create a promise that rejects after a specified timeout period
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Timeout')), FETCH_TIMEOUT_MS)
     );
 
     const fetchPromise = (async () => {
+      // Set up an HTTPS agent if SSL validation is disabled
       const agent = DISABLE_SSL_VALIDATION ? new https.Agent({ rejectUnauthorized: false }) : undefined;
+      
+      // Fetch the URL content
       const response = await fetch(url, { agent });
+      
+      // Get the HTML text from the response
       const html = await response.text();
+      
+      // Set up a virtual console to suppress errors during DOM parsing
       const virtualConsole = new VirtualConsole();
       virtualConsole.on("error", () => { /* Ignore errors */ });
+      
+      // Create a JSDOM instance to parse the HTML
       const dom = new JSDOM(html, { 
         url,
         runScripts: "outside-only",
         resources: "usable",
         virtualConsole
       });
+      
+      // Use Readability to extract the main content from the document
       const reader = new Readability(dom.window.document);
       const article = reader.parse();
+      
+      // Return the extracted text content or an empty string if parsing fails
       return article ? article.textContent : "";
     })();
 
+    // Race the fetch promise against the timeout promise
     const result = await Promise.race([fetchPromise, timeoutPromise]);
     
+    // Check if the result was a timeout
     if (result === 'Timeout') {
+      // Log the timeout error and return an empty string
       await logError(`Timeout fetching content from ${url} (${FETCH_TIMEOUT_MS}ms)`);
       return "";
     }
     
-    // Remove extra line breaks and trim lines with only spaces or tabs
+    // Process the result to remove extra line breaks and trim unnecessary spaces
     return result
       .split('\n')
       .map(line => line.trim())
@@ -177,16 +196,17 @@ async function fetchWebContent(url) {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   } catch (error) {
+    // Log any errors encountered during the fetch process
     await logError(`Error fetching content from ${url}: ${error.message}`);
     return "";
   }
 }
 
-/* --------------------- */
+/* -------------- */
 /* -- logError -- */
-/* --------------------- */
+/* ------------------------------------------- */
 /* -- Logs errors to the error_log.txt file -- */
-/* ---------------------------------------- */
+/* ------------------------------------------- */
 async function logError(message) {
   const errorLogPath = path.join(__dirname, 'error_log.txt');
   const timestamp = new Date().toISOString();
@@ -294,11 +314,11 @@ Do not mention the sources of your information or that you're using any specific
   }
 }
 
-/* --------------------- */
+/* ------------------ */
 /* -- isRepetitive -- */
-/* --------------------- */
+/* --------------------------------------------- */
 /* -- Checks if the new content is repetitive -- */
-/* ---------------------------------------- */
+/* --------------------------------------------- */
 function isRepetitive(existingContent, newContent, threshold) {
   if (existingContent.length === 0) return false;
   
@@ -308,11 +328,11 @@ function isRepetitive(existingContent, newContent, threshold) {
   return similarity > threshold;
 }
 
-/* --------------------- */
+/* ------------------------- */
 /* -- calculateSimilarity -- */
-/* --------------------- */
+/* --------------------------------------------------- */
 /* -- Calculates the similarity between two strings -- */
-/* ---------------------------------------- */
+/* --------------------------------------------------- */
 function calculateSimilarity(str1, str2) {
   const set1 = new Set(str1.toLowerCase().split(' '));
   const set2 = new Set(str2.toLowerCase().split(' '));
@@ -323,11 +343,11 @@ function calculateSimilarity(str1, str2) {
   return intersection.size / union.size;
 }
 
-/* --------------------- */
+/* ----------------------- */
 /* -- rephraseForSearch -- */
-/* --------------------- */
+/* ---------------------------------------------------------- */
 /* -- Rephrases a given prompt into a concise search query -- */
-/* ---------------------------------------- */
+/* ---------------------------------------------------------- */
 async function rephraseForSearch(prompt) {
   const rephrasePrompt = `Rephrase the following question into a short, concise search query that will yield the most relevant results from a search engine. The query should be 2-15 words long and focused on gathering information to answer the original question. Do not include explanations or multiple options, just provide the best single search query.
 
@@ -360,11 +380,11 @@ Rephrased search query:`;
   return searchQuery.length > 50 ? searchQuery.substring(0, 50) : searchQuery;
 }
 
-/* --------------------- */
+/* --------------- */
 /* -- countdown -- */
-/* --------------------- */
+/* -------------------------------------------------------------*/
 /* -- Displays a countdown timer and waits for any key press -- */
-/* ---------------------------------------- */
+/* -------------------------------------------------------------*/
 function countdown(seconds) {
   return new Promise((resolve) => {
     const rl = readline.createInterface({
@@ -406,11 +426,11 @@ function countdown(seconds) {
   });
 }
 
-/* --------------------- */
+/* ---------- */
 /* -- main -- */
-/* --------------------- */
+/* ----------------------------------------------------------------- */
 /* -- Orchestrates the web search and response generation process -- */
-/* ---------------------------------------- */
+/* ----------------------------------------------------------------- */
 async function main() {
   let args = process.argv.slice(2).filter(arg => arg !== '--from-ask-script');
   let originalPrompt;
@@ -436,7 +456,9 @@ async function main() {
     originalPrompt = args.join(" ");
   }
 
-  // ascii art
+  // ---------------
+  // -- ascii art --
+  // ---------------
   const colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
   console.log(chalk[randomColor](`
@@ -453,7 +475,10 @@ async function main() {
     // Clear out previous content in error_log.txt
     await fs.writeFile(`${__dirname}/error_log.txt`, '', 'utf8');
 
-    // Step 1: Rephrase the prompt for better search results
+    // -------------
+    // -- Step 1: ----------------------------------------
+    // -- Rephrase the prompt for better search results --
+    // ---------------------------------------------------
     spinner.text = 'Rephrasing prompt for search';
     let searchPrompt = await rephraseForSearch(originalPrompt);
     
@@ -462,26 +487,39 @@ async function main() {
       searchPrompt = originalPrompt;
     }
     
-    let fullLog = `Original prompt: ${originalPrompt}\nRephrased search query: ${searchPrompt}\n\n`;
+    let fullLog = `Original prompt:\n${originalPrompt}\nRephrased search query: ${searchPrompt}\n\n`;
 
-    // Step 2: Search web using SearXNG with the rephrased prompt
+    // -------------
+    // -- Step 2: ---------------------------------------------
+    // -- Search web using SearXNG with the rephrased prompt --
+    // --------------------------------------------------------
     spinner.text = 'Searching the web';
     await delay(500); // Add delay before search
     const searchResults = await searchWeb(searchPrompt);
     fullLog += `Search results:\n${searchResults.join('\n')}\n\n`;
 
-    // Step 3: Scrape content from each URL
+    // -------------
+    // -- Step 3: -----------------------
+    // -- Scrape content from each URL --
+    // ----------------------------------
     let combinedContent = "";
     for (const url of searchResults) {
       spinner.text = `Fetching content from ${url}`;
       const content = await fetchWebContent(url);
       const trimmedContent = content.trim();
       if (trimmedContent) {
-        const summarizedContent = summarizeContent(trimmedContent);
-        combinedContent += `Content from ${url}:\n\n${summarizedContent}\n\n`;
-        fullLog += `Content from ${url}:\n\n${trimmedContent}\n\n---\n\n`;
-      } else {
-        fullLog += `No content could be extracted from ${url}\n\n---\n\n`;
+        let summarizedContent;
+        // if the `CHUNK_CONTENT` environment variable is set to `true`, use semantic chunk matching to summarize the content
+        if (process.env.CHUNK_CONTENT === 'true') {
+          summarizedContent = await chunkMatchContent(trimmedContent, searchPrompt);
+        } else {
+          // otherwise, use a simple truncation method to summarize the content
+          summarizedContent = summarizeContent(trimmedContent, process.env.WEB_PAGE_CONTENT_MAX_LENGTH);
+        }
+        if (summarizedContent.length > 0) {
+          combinedContent += `Content from ${url}:\n\n${summarizedContent}\n\n`;
+          fullLog += `Content from ${url}:\n\n${trimmedContent}\n\n---\n\n`;
+        }
       }
     }
 
@@ -490,7 +528,10 @@ async function main() {
       fullLog += "No relevant information found from web search.\n";
     }
 
-    // Step 4: Create system prompt
+    // -------------
+    // -- Step 4: ---------------
+    // -- Create system prompt --
+    // --------------------------
     const systemPrompt = `You are a helpful assistant with access to the following information:
 
 ${combinedContent}
@@ -504,11 +545,17 @@ ${originalPrompt}
 
 Provide your answer as if you inherently know the information, without referencing any sources or context. Do not mention any limitations in your knowledge or capabilities, and do not refer to your training data or cutoff date. Simply provide the most up-to-date and accurate information available to you.`;
 
-    // Step 5: Log everything to txt
+    // -------------
+    // -- Step 5: ----------------
+    // -- Log everything to txt --
+    // ---------------------------
     fullLog += `\nSystem Prompt:\n${systemPrompt}\n\n`;
     await fs.writeFile(`${__dirname}/log.txt`, fullLog, 'utf8');
 
-    // Step 6: Generate and write out the answer
+    // -------------
+    // -- Step 6: ----------------------------
+    // -- Generate and write out the answer --
+    // ---------------------------------------
     spinner.stop(); // Stop the spinner before streaming
     let response = await generateWithContext(originalPrompt, combinedContent, { prompt: systemPrompt });
     
@@ -521,6 +568,11 @@ Provide your answer as if you inherently know the information, without referenci
 
     // Append the generated response to the log file
     await fs.appendFile(`${__dirname}/log.txt`, `\nGenerated response:\n${response}\n`);
+
+    // calculate the token count of `systemPrompt` + `response`
+    const tokenCount = llama3Tokenizer.encode(systemPrompt + response);
+    console.log(chalk.blue(`\nTokens sent to LLM: ${tokenCount.length}`));
+    await fs.appendFile(`${__dirname}/log.txt`, `\nTokens sent to LLM: ${tokenCount.length}\n`, 'utf8');
 
     // Only run the countdown if executed from an ask script
     if (runningFromAskScript) {
@@ -554,11 +606,49 @@ if (runningFromAskScript) {
   });
 }
 
-/* --------------------- */
+// -------------------------
+// -- chunk-match content --
+// -------------------------
+async function chunkMatchContent(content, query) {
+  // set the options for the chunk-match library
+  const options = {
+    maxResults: parseInt(process.env.CHUNK_CONTENT_MAX_RESULTS) || 5,
+    minSimilarity: parseFloat(process.env.CHUNK_CONTENT_MIN_SIMILARITY) || 0.475,
+    chunkingOptions: {
+        maxTokenSize: 500,
+        similarityThreshold: parseFloat(process.env.CHUNK_CONTENT_SIMILARITY_THRESHOLD) || 0.5,
+        dynamicThresholdLowerBound: parseFloat(process.env.CHUNK_CONTENT_DYNAMIC_THRESHOLD_LOWER_BOUND) || 0.4,
+        dynamicThresholdUpperBound: parseFloat(process.env.CHUNK_CONTENT_DYNAMIC_THRESHOLD_UPPER_BOUND) || 0.8,
+        numSimilaritySentencesLookahead: parseInt(process.env.CHUNK_CONTENT_NUM_SIMILARITY_SENTENCES_LOOKAHEAD) || 3,
+        combineChunks: process.env.CHUNK_CONTENT_COMBINE_CHUNKS === 'true',
+        combineChunksSimilarityThreshold: parseFloat(process.env.CHUNK_CONTENT_COMBINE_CHUNKS_SIMILARITY_THRESHOLD) || 0.6,
+        onnxEmbeddingModel: process.env.CHUNK_CONTENT_ONNX_EMBEDDING_MODEL || "Xenova/all-MiniLM-L6-v2",
+        dtype: process.env.CHUNK_CONTENT_DTYPE || "q8"
+    }
+  };
+
+  // call `chunk-match` library to return semantically similar chunks of content from the scraped web content
+  const chunks = await matchChunks(
+    [{ document_name: 'content', document_text: content }],
+    query,
+    options
+  );
+
+  // concatenate the chunks into a single string
+  let chunkMatchedContent = "";
+  for (const doc of chunks) {
+    chunkMatchedContent += doc.chunk;
+  }
+
+  // return the concatenated chunks
+  return chunkMatchedContent;
+}
+
+/* ---------------------- */
 /* -- summarizeContent -- */
-/* --------------------- */
+/* -------------------------------------------------------------------- */
 /* -- Summarizes content by truncating to a specified maximum length -- */
-/* ---------------------------------------- */
+/* -------------------------------------------------------------------- */
 function summarizeContent(content, maxLength = 1000) {
   const sentences = []
   for (const { segment } of splitBySentence(content)) {
@@ -603,11 +693,11 @@ function containsContextInfo(response, context) {
   return false;
 }
 
-/* --------------------- */
+/* ----------- */
 /* -- delay -- */
-/* --------------------- */
+/* ------------------------------------------- */
 /* -- Utility function to introduce a delay -- */
-/* ---------------------------------------- */
+/* ------------------------------------------- */
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
