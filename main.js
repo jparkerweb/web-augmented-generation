@@ -219,6 +219,23 @@ async function logError(message) {
   }
 }
 
+/* ------------- */
+/* -- logInfo -- */
+/* ----------------------------------------- */
+/* -- Logs information to the log.txt file -- */
+/* ----------------------------------------- */
+async function logInfo(content) {
+  const logPath = path.join(__dirname, 'log.txt');
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp}\n${content}\n\n`;
+  
+  try {
+    await fs.appendFile(logPath, logMessage);
+  } catch (error) {
+    console.error(`Failed to write to log file: ${error.message}`);
+  }
+}
+
 /* ------------------------- */
 /* -- generateWithContext -- */
 /* --------------------------------------------------------------- */
@@ -472,8 +489,9 @@ async function main() {
   const spinner = ora('Processing').start();
 
   try {
-    // Clear out previous content in error_log.txt
+    // Clear out previous content in error_log.txt and log.txt
     await fs.writeFile(`${__dirname}/error_log.txt`, '', 'utf8');
+    await fs.writeFile(`${__dirname}/log.txt`, '', 'utf8');
 
     // -------------
     // -- Step 1: ----------------------------------------
@@ -488,6 +506,7 @@ async function main() {
     }
     
     let fullLog = `Original prompt:\n${originalPrompt}\nRephrased search query: ${searchPrompt}\n\n`;
+    await logInfo(fullLog);
 
     // -------------
     // -- Step 2: ---------------------------------------------
@@ -496,15 +515,29 @@ async function main() {
     spinner.text = 'Searching the web';
     await delay(500); // Add delay before search
     const searchResults = await searchWeb(searchPrompt);
-    fullLog += `Search results:\n${searchResults.join('\n')}\n\n`;
+    fullLog = `Search results:\n${searchResults.join('\n')}\n\n`;
+    await logInfo(fullLog);
 
     // -------------
     // -- Step 3: -----------------------
     // -- Scrape content from each URL --
     // ----------------------------------
     let combinedContent = "";
+    
+    // First log all raw content
     for (const url of searchResults) {
       spinner.text = `Fetching content from ${url}`;
+      const content = await fetchWebContent(url);
+      const trimmedContent = content.trim();
+      if (trimmedContent) {
+        fullLog = `Raw Content from ${url}:\n\n${trimmedContent}\n\n---\n\n`;
+        await logInfo(fullLog);
+      }
+    }
+
+    // Then process and collect summarized content
+    for (const url of searchResults) {
+      spinner.text = `Processing content from ${url}`;
       const content = await fetchWebContent(url);
       const trimmedContent = content.trim();
       if (trimmedContent) {
@@ -512,20 +545,24 @@ async function main() {
         // if the `CHUNK_CONTENT` environment variable is set to `true`, use semantic chunk matching to summarize the content
         if (process.env.CHUNK_CONTENT === 'true') {
           summarizedContent = await chunkMatchContent(trimmedContent, searchPrompt);
+          // If chunk matching didn't return content, fall back to summarizeContent
+          if (!summarizedContent || summarizedContent.trim().length === 0) {
+            summarizedContent = summarizeContent(trimmedContent, parseInt(process.env.CHUNK_CONTENT_MAX_TOKEN_SIZE) || 500);
+          }
         } else {
           // otherwise, use a simple truncation method to summarize the content
           summarizedContent = summarizeContent(trimmedContent, process.env.WEB_PAGE_CONTENT_MAX_LENGTH);
         }
         if (summarizedContent.length > 0) {
           combinedContent += `Content from ${url}:\n\n${summarizedContent}\n\n`;
-          fullLog += `Content from ${url}:\n\n${trimmedContent}\n\n---\n\n`;
         }
       }
     }
 
     if (combinedContent.trim().length === 0) {
       combinedContent = "No relevant information found from web search.";
-      fullLog += "No relevant information found from web search.\n";
+      fullLog = "No relevant information found from web search.\n";
+      await logInfo(fullLog);
     }
 
     // -------------
@@ -545,12 +582,20 @@ ${originalPrompt}
 
 Provide your answer as if you inherently know the information, without referencing any sources or context. Do not mention any limitations in your knowledge or capabilities, and do not refer to your training data or cutoff date. Simply provide the most up-to-date and accurate information available to you.`;
 
-    // -------------
-    // -- Step 5: ----------------
-    // -- Log everything to txt --
-    // ---------------------------
-    fullLog += `\nSystem Prompt:\n${systemPrompt}\n\n`;
-    await fs.writeFile(`${__dirname}/log.txt`, fullLog, 'utf8');
+    // Log the processed content that will be sent to the LLM
+    fullLog = `Content Being Sent to LLM:\n\n${combinedContent}\n\n`;
+    await logInfo(fullLog);
+
+    fullLog = `\n\n/* ------------------------------------ */
+/* ----------- SYSTEM PROMPT ---------- */
+/* ------------------------------------ */
+
+${systemPrompt}
+
+/* ------------------------------------ */
+/* -------- END SYSTEM PROMPT --------- */
+/* ------------------------------------ */\n\n`;
+    await logInfo(fullLog);
 
     // -------------
     // -- Step 6: ----------------------------
