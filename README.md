@@ -1,23 +1,25 @@
 # 🌐 Web-Augmented Generation
 
-This Node.js application performs web-augmented generation using Ollama and web search results from SearXNG.
+This Node.js application performs web-augmented generation using various LLM providers and web search results from SearXNG.
 
 ## Features
 
 - Rephrases user queries for optimal web searching
 - Searches the web using SearXNG
 - Fetches and summarizes content from search results
-- Generates responses using Ollama or any LLM via OpenAI API calls, incorporating web-sourced information
+- Generates responses using various LLM providers via OpenAI-compatible API calls
 - Supports streaming responses for real-time output
 - Logs detailed information about the process
-
-![WAG](./wag.jpg)
+- Implements content similarity checking and repetition detection
+- Features an interactive CLI
+- Includes comprehensive error handling and logging
+- Supports multiple LLM providers (Ollama, together.ai, llama.cpp)
 
 ## Prerequisites
 
 - Node.js (version 16 or higher)
 - npm (Node Package Manager)
-- Ollama server running locally or remotely (or any LLM Inference Service that is compatible with OpenAI API calls)
+- LLM provider running locally or remotely (or any LLM Inference Service that is compatible with OpenAI API calls)
 - Access to a SearXNG instance
 
 ## Setup
@@ -39,54 +41,70 @@ This Node.js application performs web-augmented generation using Ollama and web 
    ```
 
 4. Edit the `.env` file and update the values as needed:
-   ```
-   NUM_URLS=5
-   SEARXNG_URL=https://searxng.acme.org
-   SEARXNG_URL_EXTRA_PARAMETER="key=your_auth_key_here"
-   SEARXNG_FORMAT=html
-   FETCH_TIMEOUT_MS=5000
-   DISABLE_SSL_VALIDATION=false
-   LLM_BASE_URL=http://localhost:11434/v1
-   LLM_API_KEY=ollama
-   LLM_MODEL=qwen2.5:1.5b
-   LLM_STREAM_RESPONSE=true
-   ```
 
-   - `NUM_URLS`: Number of search results to process
-   - `SEARXNG_URL`: URL of the SearXNG instance to use for web searches
-   - `SEARXNG_URL_EXTRA_PARAMETER`: Additional URL parameters for SearXNG requests (e.g., authentication key)
-   - `SEARXNG_FORMAT`: Format for SearXNG results, either 'html' or 'json'
-   - `FETCH_TIMEOUT_MS`: Timeout for fetching web content in milliseconds
-   - `DISABLE_SSL_VALIDATION`: Set to 'true' to disable SSL certificate validation (use with caution)
-   - `LLM_STREAM_RESPONSE`: Set to 'true' to enable streaming responses, 'false' for single response
-   - `LLM_BASE_URL`: Base URL for the LLM API (OpenAI format)
-   - `LLM_API_KEY`: API key for the LLM (use 'ollama' for Ollama)
-   - `LLM_MODEL`: Model to use with the LLM API
+```env
+######################
+## General Settings ##
+######################
+NUM_URLS=10                                                           # Number of URLs to fetch
+SEARXNG_URL=https://searx.be/                                         # URL of the SearXNG server
+SEARXNG_URL_EXTRA_PARAMETER="key=optional_auth_key_here&language=en"  # Extra parameter for SearXNG URL
+SEARXNG_FORMAT=html                                                   # Format for SearXNG results (html or json)
+FETCH_TIMEOUT_MS=5000                                                 # Timeout for fetching URLs
+DISABLE_SSL_VALIDATION=true                                           # Whether to disable SSL validation
 
-   Example LLM Provider Configurations:
+##################
+## LLM Settings ##
+##################
+LLM_STREAM_RESPONSE=true                             # Whether to stream the LLM response
 
-   ```   
-   ##################
-   ## Ollama Local ##
-   ##################
-   LLM_BASE_URL=http://localhost:11434/v1              # Base URL for the LLM API (OpenAI format)
-   LLM_API_KEY=ollama                                  # API key for the LLM (use 'ollama' for Ollama)
-   LLM_MODEL=qwen2.5:0.5b                              # Model to use with the LLM API   
+# Ollama Local Configuration
+LLM_BASE_URL=http://localhost:11434/v1               # Base URL for the LLM API (OpenAI format)
+LLM_API_KEY=ollama!!!                                # API key for the LLM (use 'ollama' for Ollama)
+LLM_MODEL=llama3.2:1b                                # Model to use with the LLM API
 
-   #################
-   ## together.ai ##
-   #################
-   # LLM_BASE_URL=https://api.together.xyz/v1          # Base URL for the LLM API (OpenAI format)
-   # LLM_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxx          # API key for the LLM (use 'ollama' for Ollama)
-   # LLM_MODEL=meta-llama/Llama-3.2-3B-Instruct-Turbo  # Model to use with the LLM API   
+####################################
+## Scraped Page Content Settings ##
+####################################
 
-   ###############
-   ## llama.cpp ##
-   ###############
-   # LLM_BASE_URL=http://localhost:8080/v1             # Base URL for the LLM API (OpenAI format)
-   # LLM_API_KEY=not-needed                            # API key for the LLM (use 'ollama' for Ollama)
-   # LLM_MODEL=not-needed                              # Model to use with the LLM API   
-   ```
+# Semantic Chunking Settings
+CHUNK_CONTENT=true
+## The following parameters are only used by the `chunk-match` library (if CHUNK_CONTENT is set to true)
+CHUNK_CONTENT_MAX_RESULTS=10
+CHUNK_CONTENT_MIN_SIMILARITY=0.375
+CHUNK_CONTENT_MAX_TOKEN_SIZE=500
+CHUNK_CONTENT_SIMILARITY_THRESHOLD=0.4
+CHUNK_CONTENT_DYNAMIC_THRESHOLD_LOWER_BOUND=0.3
+CHUNK_CONTENT_DYNAMIC_THRESHOLD_UPPER_BOUND=0.5
+CHUNK_CONTENT_NUM_SIMILARITY_SENTENCES_LOOKAHEAD=3
+CHUNK_CONTENT_COMBINE_CHUNKS=true
+CHUNK_CONTENT_COMBINE_CHUNKS_SIMILARITY_THRESHOLD=0.5
+CHUNK_CONTENT_ONNX_EMBEDDING_MODEL="Xenova/all-MiniLM-L6-v2"
+CHUNK_CONTENT_DTYPE="q8"
+
+# Raw Content Settings (used when CHUNK_CONTENT=false)
+WEB_PAGE_CONTENT_MAX_LENGTH=1000                     # Maximum length of raw page content to send to LLM
+```
+
+Alternative LLM Provider Configurations:
+
+```env
+# together.ai Configuration
+LLM_BASE_URL=https://api.together.xyz/v1
+LLM_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LLM_MODEL=meta-llama/Llama-3.2-3B-Instruct-Turbo
+
+# llama.cpp Configuration
+LLM_BASE_URL=http://localhost:8080/v1
+LLM_API_KEY=not-needed
+LLM_MODEL=not-needed
+```
+
+The configuration includes:
+- General settings for web search and content fetching
+- LLM provider settings with support for multiple providers
+- Content processing settings with semantic chunking options
+- Raw content handling parameters
 
 ## LLM Configuration
 
@@ -123,14 +141,22 @@ Run the application with or without a query:
 node main.js "Your question or prompt here"
 ```
 
+or use the ask script for a more interactive experience:
+
+```
+node ask.js
+```
+
 _If you don't provide a query, the application will prompt you to enter one._
 
 The application will:
 1. Rephrase the query for better search results
 2. Search the web using SearXNG
 3. Fetch and summarize content from the search results
-4. Generate a response using Ollama, incorporating the web-sourced information
-5. Log the process details to `log.txt`
+4. Check for content similarity to avoid repetitive information
+5. Generate a response using the configured LLM, incorporating the web-sourced information
+6. Display real-time progress with an interactive countdown timer
+7. Log the process details to `log.txt`
 
 The generated response will be displayed in the console and appended to the log file.
 
