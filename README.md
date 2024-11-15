@@ -68,7 +68,8 @@ LLM_MODEL=llama3.2:1b                                # Model to use with the LLM
 ####################################
 
 # Semantic Chunking Settings
-CHUNK_CONTENT=true
+CHUNK_CONTENT=true                                   # Enable semantic chunking for better quality answers
+CHUNK_CONTENT_USE_HYBRID_FALLBACK=true               # Enable hybrid mode to fallback to summarization if no chunks found
 ## The following parameters are only used by the `chunk-match` library (if CHUNK_CONTENT is set to true)
 CHUNK_CONTENT_MAX_RESULTS=10
 CHUNK_CONTENT_MIN_SIMILARITY=0.375

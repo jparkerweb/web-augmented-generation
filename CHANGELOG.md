@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Intelligent Semantic Chunk Matching of scraped web content using `chunk-match` library (optional)
+- Setting to enable a hybrid mode that combines Chunk Matching with summarization fallback
 - Estimates token count using `llama3-tokenizer-js`
 
 ## [1.1.1] - 2024-10-31
