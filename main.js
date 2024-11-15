@@ -545,8 +545,8 @@ async function main() {
         // if the `CHUNK_CONTENT` environment variable is set to `true`, use semantic chunk matching to summarize the content
         if (process.env.CHUNK_CONTENT === 'true') {
           summarizedContent = await chunkMatchContent(trimmedContent, searchPrompt);
-          // If chunk matching didn't return content, fall back to summarizeContent
-          if (!summarizedContent || summarizedContent.trim().length === 0) {
+          // If hybrid mode is enabled and chunk matching didn't return content, fall back to summarizeContent
+          if (process.env.CHUNK_CONTENT_USE_HYBRID_FALLBACK === 'true' && (!summarizedContent || summarizedContent.trim().length === 0)) {
             summarizedContent = summarizeContent(trimmedContent, parseInt(process.env.CHUNK_CONTENT_MAX_TOKEN_SIZE) || 500);
           }
         } else {
