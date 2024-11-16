@@ -21,8 +21,19 @@
               "icon": "lucide-file",
               "title": "v1.2.0 - 📦 Semantic Chunk Matching"
             }
+          },
+          {
+            "id": "0ffdee8c82d72a40",
+            "type": "leaf",
+            "state": {
+              "type": "custom-frames-📄-release-notes",
+              "state": {},
+              "icon": "lucide-notebook-pen",
+              "title": "📄 release notes"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -153,6 +164,36 @@
             "id": "aeaed3e55240b521",
             "type": "leaf",
             "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "fd86f16b551c27ae",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "affbbb4c6a91ae91",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "d97204ba38f3756f",
+            "type": "leaf",
+            "state": {
               "type": "Saved Queries View",
               "state": {},
               "icon": "feather-mouse-pointer",
@@ -160,7 +201,7 @@
             }
           },
           {
-            "id": "fd86f16b551c27ae",
+            "id": "3b8d9a83a267376b",
             "type": "leaf",
             "state": {
               "type": "Saved Queries View",
@@ -170,7 +211,7 @@
             }
           }
         ],
-        "currentTab": 6
+        "currentTab": 9
       }
     ],
     "direction": "horizontal",
@@ -179,16 +220,17 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "obsidian-custom-frames:Open 📄 release notes": false,
       "switcher:Open quick switcher": false,
       "templates:Insert template": true,
       "command-palette:Open command palette": false,
-      "callout-manager:Insert Callout": false
+      "callout-manager:Insert Callout": true
     }
   },
-  "active": "79f31c3962671964",
+  "active": "3b8d9a83a267376b",
   "lastOpenFiles": [
-    "images/model-precision.gif",
     "releases/v1.2.0 - 📦 Semantic Chunk Matching.md",
+    "images/model-precision.gif",
     "images/releases/v1.2.0.jpg",
     "images/releases/v2.3.0.jpg",
     "= attachments/robot-blocks.png",
