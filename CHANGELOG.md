@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2024-11-18
+
+### 📦 Updated
+- `chunk-match` patch version update
+- `string-segmenter` patch version update
+
 ## [1.2.0] - 2024-11-13
 
 ### ✨ Added
