@@ -1,6 +1,13 @@
 # 🌐 Web-Augmented Generation
-
 This Node.js application performs web-augmented generation using various LLM providers and web search results from SearXNG.
+
+### Maintained by
+<a href="https://www.equilllabs.com">
+  <img src="https://raw.githubusercontent.com/jparkerweb/eQuill-Labs/refs/heads/main/src/static/images/logo-text-outline.png" alt="eQuill Labs" height="40">
+</a>
+
+<br>
+<br>
 
 ## Features
 
