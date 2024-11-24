@@ -106,6 +106,16 @@ LLM_MODEL=meta-llama/Llama-3.2-3B-Instruct-Turbo
 LLM_BASE_URL=http://localhost:8080/v1
 LLM_API_KEY=not-needed
 LLM_MODEL=not-needed
+
+# OpenRouter Configuration
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LLM_MODEL=google/gemini-pro-1.5-exp
+
+# Google AI Studio Configuration
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+LLM_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LLM_MODEL=gemini-exp-1121
 ```
 
 The configuration includes:
