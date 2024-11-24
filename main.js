@@ -393,7 +393,18 @@ Rephrased search query:`;
       throw error;
     }
   }
-  const searchQuery = responseObj.choices[0].message.content.split('\n')[0].trim();
+  let searchQuery;
+  if (responseObj.error) {
+    const errorMessage = JSON.stringify(responseObj.error, null, 2);
+    await logError(`LLM API Error during rephraseForSearch: ${errorMessage}`);
+    throw new Error(`LLM API Error: ${errorMessage}`);
+  } else if (responseObj.choices?.[0]?.message?.content) {
+    searchQuery = responseObj.choices[0].message.content.split('\n')[0].trim();
+  } else {
+    const errorMessage = `Unexpected response format from LLM API: ${JSON.stringify(responseObj, null, 2)}`;
+    await logError(errorMessage);
+    throw new Error(errorMessage);
+  }
   return searchQuery.length > 50 ? searchQuery.substring(0, 50) : searchQuery;
 }
 
