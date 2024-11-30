@@ -609,7 +609,7 @@ ${systemPrompt}
     await logInfo(fullLog);
 
     // -------------
-    // -- Step 6: ----------------------------
+    // -- Step 4: ----------------------------
     // -- Generate and write out the answer --
     // ---------------------------------------
     spinner.stop(); // Stop the spinner before streaming
