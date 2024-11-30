@@ -46,17 +46,45 @@ var ReleaseNotesModal = class extends import_obsidian.Modal {
       text: "After each update you'll be prompted with the release notes. You can disable this in the plugin settings.",
       cls: "release-notes-instructions"
     });
-    const kofiContainer = contentEl.createEl("div");
-    kofiContainer.style.textAlign = "right";
-    const kofiLink = kofiContainer.createEl("a", {
-      href: "https://ko-fi.com/jparkerweb",
+    const promotionalLinks = contentEl.createEl("div");
+    promotionalLinks.style.display = "flex";
+    promotionalLinks.style.flexDirection = "row";
+    promotionalLinks.style.justifyContent = "space-around";
+    const equilllabsLink = promotionalLinks.createEl("a", {
+      href: "https://www.equilllabs.com",
+      target: "_blank"
+    });
+    equilllabsLink.createEl("img", {
+      attr: {
+        height: "36",
+        style: "border:0px;height:36px;",
+        src: "https://raw.githubusercontent.com/jparkerweb/pixel-banner/refs/heads/main/img/equilllabs.png?raw=true",
+        border: "0",
+        alt: "eQuill-Labs"
+      }
+    });
+    const discordLink = promotionalLinks.createEl("a", {
+      href: "https://discord.gg/sp8AQQhMJ7",
+      target: "_blank"
+    });
+    discordLink.createEl("img", {
+      attr: {
+        height: "36",
+        style: "border:0px;height:36px;",
+        src: "https://raw.githubusercontent.com/jparkerweb/pixel-banner/refs/heads/main/img/discord.png?raw=true",
+        border: "0",
+        alt: "Discord"
+      }
+    });
+    const kofiLink = promotionalLinks.createEl("a", {
+      href: "https://ko-fi.com/Z8Z212UMBI",
       target: "_blank"
     });
     kofiLink.createEl("img", {
       attr: {
         height: "36",
         style: "border:0px;height:36px;",
-        src: "https://raw.githubusercontent.com/jparkerweb/rich-foot/refs/heads/main/img/support.png",
+        src: "https://raw.githubusercontent.com/jparkerweb/pixel-banner/refs/heads/main/img/support.png?raw=true",
         border: "0",
         alt: "Buy Me a Coffee at ko-fi.com"
       }
@@ -79,7 +107,7 @@ var ReleaseNotesModal = class extends import_obsidian.Modal {
 };
 
 // virtual-module:virtual:release-notes
-var releaseNotes = '<h2>\u{1F389} What&#39;s New</h2>\n<h3>v1.6.1</h3>\n<h4>Fixed</h4>\n<ul>\n<li>Fixed console error when switching between reading/editing modes</li>\n</ul>\n<h3>v1.6.0</h3>\n<h4>New Color Customization Options</h4>\n<ul>\n<li>New Border, Links, and Date color customization options in settings<ul>\n<li>Color picker to select custom colors</li>\n<li>Reset button to restore default colors (theme accent color)</li>\n<li>Real-time color updates</li>\n</ul>\n</li>\n</ul>\n<p><img src="https://raw.githubusercontent.com/jparkerweb/rich-foot/refs/heads/main/img/releases/rich-foot-v1.6.0.jpg" alt="New Color Customization Options"></p>\n';
+var releaseNotes = '<h2>\u{1FAE3} Page Preview Support</h2>\n<h3>[1.8.0] - 2024-11-29</h3>\n<h4>\u2728 Added</h4>\n<ul>\n<li>Support for <code>Page Preview</code> core plugin for <code>Outlinks</code> &amp; <code>Backlinks</code></li>\n</ul>\n<p><a href="https://raw.githubusercontent.com/jparkerweb/rich-foot/refs/heads/main/img/releases/rich-foot-v1.8.0.jpg"><img src="https://raw.githubusercontent.com/jparkerweb/rich-foot/refs/heads/main/img/releases/rich-foot-v1.8.0.jpg" alt="screenshot"></a></p>\n';
 
 // src/main.js
 var DEFAULT_SETTINGS = {
@@ -95,7 +123,10 @@ var DEFAULT_SETTINGS = {
   borderColor: "var(--text-accent)",
   linkColor: "var(--link-color)",
   linkBackgroundColor: "var(--tag-background)",
-  linkBorderColor: "rgba(255, 255, 255, 0.204)"
+  linkBorderColor: "rgba(255, 255, 255, 0.204)",
+  customCreatedDateProp: "",
+  customModifiedDateProp: "",
+  dateDisplayFormat: "mmmm dd, yyyy"
 };
 function rgbToHex(color) {
   if (color.startsWith("hsl")) {
@@ -126,6 +157,42 @@ function blendRgbaWithBackground(rgba, backgroundRgb) {
   const b = Math.round(fb * alpha + bb * (1 - alpha));
   return `rgb(${r}, ${g}, ${b})`;
 }
+function formatDate(date, format) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const day = d.getDate();
+  const weekday = d.getDay();
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthsShort = months.map((m) => m.slice(0, 3));
+  const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdaysShort = weekdays.map((w) => w.slice(0, 3));
+  const pad = (num) => num.toString().padStart(2, "0");
+  const tokens = {
+    "dddd": weekdays[weekday],
+    "ddd": weekdaysShort[weekday],
+    "dd": pad(day),
+    "d": day.toString(),
+    "mmmm": months[month],
+    "mmm": monthsShort[month],
+    "mm": pad(month + 1),
+    "m": (month + 1).toString(),
+    "yyyy": year.toString(),
+    "yy": year.toString().slice(-2)
+  };
+  const sortedTokens = Object.keys(tokens).sort((a, b) => b.length - a.length);
+  let result = format;
+  const replacements = /* @__PURE__ */ new Map();
+  sortedTokens.forEach((token, index) => {
+    const placeholder = `__${index}__`;
+    replacements.set(placeholder, tokens[token]);
+    result = result.replace(new RegExp(token, "g"), placeholder);
+  });
+  replacements.forEach((value, placeholder) => {
+    result = result.replace(new RegExp(placeholder, "g"), value);
+  });
+  return result;
+}
 var RichFootPlugin = class extends import_obsidian2.Plugin {
   async onload() {
     await this.loadSettings();
@@ -138,6 +205,18 @@ var RichFootPlugin = class extends import_obsidian2.Plugin {
     await this.checkVersion();
     this.updateRichFoot = (0, import_obsidian2.debounce)(this.updateRichFoot.bind(this), 100, true);
     this.addSettingTab(new RichFootSettingTab(this.app, this));
+    this.registerEvent(
+      this.app.metadataCache.on("changed", (file) => {
+        const cache = this.app.metadataCache.getFileCache(file);
+        if (cache == null ? void 0 : cache.frontmatter) {
+          const customCreatedProp = this.settings.customCreatedDateProp;
+          const customModifiedProp = this.settings.customModifiedDateProp;
+          if (customCreatedProp && customCreatedProp in cache.frontmatter || customModifiedProp && customModifiedProp in cache.frontmatter) {
+            this.updateRichFoot();
+          }
+        }
+      })
+    );
     this.app.workspace.onLayoutReady(() => {
       this.registerEvent(
         this.app.workspace.on("layout-change", this.updateRichFoot)
@@ -273,8 +352,10 @@ var RichFootPlugin = class extends import_obsidian2.Plugin {
           const li = backlinksUl.createEl("li");
           const link = li.createEl("a", {
             href: linkPath,
-            text: linkPath.split("/").pop().slice(0, -3)
+            text: linkPath.split("/").pop().slice(0, -3),
+            cls: this.isEditMode() ? "cm-hmd-internal-link" : "internal-link"
           });
+          link.dataset.href = linkPath;
           link.addEventListener("click", (event) => {
             event.preventDefault();
             this.app.workspace.openLinkText(linkPath, file.path);
@@ -296,8 +377,10 @@ var RichFootPlugin = class extends import_obsidian2.Plugin {
           const li = outlinksUl.createEl("li");
           const link = li.createEl("a", {
             href: linkPath,
-            text: displayName
+            text: displayName,
+            cls: this.isEditMode() ? "cm-hmd-internal-link" : "internal-link"
           });
+          link.dataset.href = linkPath;
           link.addEventListener("click", (event) => {
             event.preventDefault();
             this.app.workspace.openLinkText(linkPath, file.path);
@@ -307,28 +390,107 @@ var RichFootPlugin = class extends import_obsidian2.Plugin {
     }
     if (this.settings.showDates) {
       const datesWrapper = richFoot.createDiv({ cls: "rich-foot--dates-wrapper" });
-      const fileUpdate = new Date(file.stat.mtime);
-      const modified = `${fileUpdate.toLocaleString("default", { month: "long" })} ${fileUpdate.getDate()}, ${fileUpdate.getFullYear()}`;
+      const cache = this.app.metadataCache.getFileCache(file);
+      const frontmatter = cache == null ? void 0 : cache.frontmatter;
+      let modifiedDate;
+      if (this.settings.customModifiedDateProp && frontmatter && frontmatter[this.settings.customModifiedDateProp]) {
+        modifiedDate = frontmatter[this.settings.customModifiedDateProp];
+        let isValidDate = false;
+        let tempDate = modifiedDate;
+        if (!isNaN(Date.parse(tempDate))) {
+          isValidDate = true;
+        }
+        if (!isValidDate) {
+          let count = 0;
+          tempDate = modifiedDate.replace(/\./g, (match) => {
+            count++;
+            return count <= 2 ? "-" : match;
+          });
+          if (!isNaN(Date.parse(tempDate))) {
+            isValidDate = true;
+          }
+        }
+        if (!isValidDate) {
+          let count = 0;
+          tempDate = modifiedDate.replace(/\//g, (match) => {
+            count++;
+            return count <= 2 ? "-" : match;
+          });
+          if (!isNaN(Date.parse(tempDate))) {
+            isValidDate = true;
+          }
+        }
+        if (isValidDate) {
+          const datePart = tempDate.split("T")[0];
+          const dateStr = tempDate.includes("T") ? tempDate : `${datePart}T00:00:00`;
+          const dateObj = new Date(dateStr);
+          modifiedDate = formatDate(dateObj, this.settings.dateDisplayFormat);
+        } else {
+          modifiedDate = modifiedDate;
+        }
+      } else {
+        modifiedDate = new Date(file.stat.mtime);
+        modifiedDate = formatDate(modifiedDate, this.settings.dateDisplayFormat);
+      }
       datesWrapper.createDiv({
         cls: "rich-foot--modified-date",
-        text: `${modified}`
+        text: `${modifiedDate}`
       });
-      const fileCreated = new Date(file.stat.ctime);
-      const created = `${fileCreated.toLocaleString("default", { month: "long" })} ${fileCreated.getDate()}, ${fileCreated.getFullYear()}`;
+      let createdDate;
+      if (this.settings.customCreatedDateProp && frontmatter && frontmatter[this.settings.customCreatedDateProp]) {
+        createdDate = frontmatter[this.settings.customCreatedDateProp];
+        let isValidDate = false;
+        let tempDate = createdDate;
+        if (!isNaN(Date.parse(tempDate))) {
+          isValidDate = true;
+        }
+        if (!isValidDate) {
+          let count = 0;
+          tempDate = createdDate.replace(/\./g, (match) => {
+            count++;
+            return count <= 2 ? "-" : match;
+          });
+          if (!isNaN(Date.parse(tempDate))) {
+            isValidDate = true;
+          }
+        }
+        if (!isValidDate) {
+          let count = 0;
+          tempDate = createdDate.replace(/\//g, (match) => {
+            count++;
+            return count <= 2 ? "-" : match;
+          });
+          if (!isNaN(Date.parse(tempDate))) {
+            isValidDate = true;
+          }
+        }
+        if (isValidDate) {
+          const datePart = tempDate.split("T")[0];
+          const dateStr = tempDate.includes("T") ? tempDate : `${datePart}T00:00:00`;
+          const dateObj = new Date(dateStr);
+          createdDate = formatDate(dateObj, this.settings.dateDisplayFormat);
+        } else {
+          createdDate = createdDate;
+        }
+      } else {
+        createdDate = new Date(file.stat.ctime);
+        createdDate = formatDate(createdDate, this.settings.dateDisplayFormat);
+      }
       datesWrapper.createDiv({
         cls: "rich-foot--created-date",
-        text: `${created}`
+        text: `${createdDate}`
       });
     }
     return richFoot;
   }
   getOutlinks(file) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const cache = this.app.metadataCache.getFileCache(file);
     const links = /* @__PURE__ */ new Set();
     if (cache == null ? void 0 : cache.links) {
       for (const link of cache.links) {
-        const targetFile = this.app.metadataCache.getFirstLinkpathDest(link.link, file.path);
+        const linkPath = link.link.split("#")[0];
+        const targetFile = this.app.metadataCache.getFirstLinkpathDest(linkPath, file.path);
         if (targetFile && targetFile.extension === "md") {
           links.add(targetFile.path);
         }
@@ -340,9 +502,36 @@ var RichFootPlugin = class extends import_obsidian2.Plugin {
         for (const link of frontmatterLinks) {
           const linkText = (_b = link.match(/\[\[(.*?)\]\]/)) == null ? void 0 : _b[1];
           if (linkText) {
-            const targetFile = this.app.metadataCache.getFirstLinkpathDest(linkText, file.path);
+            const linkPath = linkText.split("#")[0];
+            const targetFile = this.app.metadataCache.getFirstLinkpathDest(linkPath, file.path);
             if (targetFile && targetFile.extension === "md") {
               links.add(targetFile.path);
+            }
+          }
+        }
+      }
+    }
+    if (cache == null ? void 0 : cache.embeds) {
+      for (const embed of cache.embeds) {
+        const filePath = embed.link.split("#")[0];
+        const targetFile = this.app.metadataCache.getFirstLinkpathDest(filePath, file.path);
+        if (targetFile && targetFile.extension === "md") {
+          links.add(targetFile.path);
+        }
+      }
+    }
+    if (cache == null ? void 0 : cache.sections) {
+      for (const section of cache.sections) {
+        if (section.type === "paragraph") {
+          const matches = ((_c = section.text) == null ? void 0 : _c.match(/\[.*?\]\((.*?)(?:#.*?)?\)/g)) || [];
+          for (const match of matches) {
+            const linkPath = (_d = match.match(/\[.*?\]\((.*?)(?:#.*?)?\)/)) == null ? void 0 : _d[1];
+            if (linkPath) {
+              const cleanPath = linkPath.split("#")[0];
+              const targetFile = this.app.metadataCache.getFirstLinkpathDest(cleanPath, file.path);
+              if (targetFile && targetFile.extension === "md") {
+                links.add(targetFile.path);
+              }
             }
           }
         }
@@ -367,11 +556,19 @@ var RichFootPlugin = class extends import_obsidian2.Plugin {
     }
     return this.settings.excludedFolders.some((folder) => filePath.startsWith(folder));
   }
+  isEditMode() {
+    var _a, _b;
+    const activeView = this.app.workspace.getActiveViewOfType(import_obsidian2.MarkdownView);
+    if (!activeView) return false;
+    return ((_b = (_a = activeView.getMode) == null ? void 0 : _a.call(activeView)) != null ? _b : activeView.mode) === "source";
+  }
 };
 var RichFootSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
+    this.createdDateInput = null;
+    this.modifiedDateInput = null;
   }
   display() {
     var _a;
@@ -428,10 +625,65 @@ var RichFootSettingTab = class extends import_obsidian2.PluginSettingTab {
       await this.plugin.saveSettings();
       this.plugin.updateRichFoot();
     }));
+    containerEl.createEl("h3", { text: "Date Settings" });
     new import_obsidian2.Setting(containerEl).setName("Show Dates").setDesc("Show creation and modification dates in the footer").addToggle((toggle) => toggle.setValue(this.plugin.settings.showDates).onChange(async (value) => {
       this.plugin.settings.showDates = value;
       await this.plugin.saveSettings();
       this.plugin.updateRichFoot();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Date Display Format").setDesc("Choose how dates should be displayed in the footer").addDropdown((dropdown) => {
+      const today = /* @__PURE__ */ new Date();
+      const formats = [
+        "mm/dd/yyyy",
+        "dd/mm/yyyy",
+        "yyyy-mm-dd",
+        "mmm dd, yyyy",
+        "dd mmm yyyy",
+        "mmmm dd, yyyy",
+        "ddd, mmm dd, yyyy",
+        "dddd, mmmm dd, yyyy",
+        "mm/dd/yy",
+        "dd/mm/yy",
+        "yy-mm-dd",
+        "m/d/yy"
+      ];
+      formats.forEach((format) => {
+        const example = formatDate(today, format);
+        dropdown.addOption(format, `${format} (example: ${example})`);
+      });
+      dropdown.setValue(this.plugin.settings.dateDisplayFormat).onChange(async (value) => {
+        this.plugin.settings.dateDisplayFormat = value;
+        await this.plugin.saveSettings();
+        this.plugin.updateRichFoot();
+      });
+    });
+    new import_obsidian2.Setting(containerEl).setName("Custom Created Date Property").setDesc("Specify a frontmatter property to use for creation date (leave empty to use file creation date)").addText((text) => {
+      text.setValue(this.plugin.settings.customCreatedDateProp).onChange(async (value) => {
+        this.plugin.settings.customCreatedDateProp = value;
+        await this.plugin.saveSettings();
+        this.plugin.updateRichFoot();
+      });
+      this.createdDateInput = text;
+      return text;
+    }).addButton((button) => button.setButtonText("Reset").onClick(async () => {
+      this.plugin.settings.customCreatedDateProp = "";
+      await this.plugin.saveSettings();
+      this.plugin.updateRichFoot();
+      this.createdDateInput.setValue("");
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Custom Modified Date Property").setDesc("Specify a frontmatter property to use for modification date (leave empty to use file modification date)").addText((text) => {
+      text.setValue(this.plugin.settings.customModifiedDateProp).onChange(async (value) => {
+        this.plugin.settings.customModifiedDateProp = value;
+        await this.plugin.saveSettings();
+        this.plugin.updateRichFoot();
+      });
+      this.modifiedDateInput = text;
+      return text;
+    }).addButton((button) => button.setButtonText("Reset").onClick(async () => {
+      this.plugin.settings.customModifiedDateProp = "";
+      await this.plugin.saveSettings();
+      this.plugin.updateRichFoot();
+      this.modifiedDateInput.setValue("");
     }));
     containerEl.createEl("h3", { text: "Style Settings" });
     new import_obsidian2.Setting(containerEl).setName("Border Width").setDesc("Adjust the width of the footer border (1-10px)").addSlider((slider) => slider.setLimits(1, 10, 1).setValue(this.plugin.settings.borderWidth).setDynamicTooltip().onChange(async (value) => {

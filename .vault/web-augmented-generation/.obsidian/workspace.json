@@ -21,19 +21,8 @@
               "icon": "lucide-file",
               "title": "v1.2.0 - 📦 Semantic Chunk Matching"
             }
-          },
-          {
-            "id": "0ffdee8c82d72a40",
-            "type": "leaf",
-            "state": {
-              "type": "custom-frames-📄-release-notes",
-              "state": {},
-              "icon": "lucide-notebook-pen",
-              "title": "📄 release notes"
-            }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -194,6 +183,36 @@
             "id": "d97204ba38f3756f",
             "type": "leaf",
             "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "3b8d9a83a267376b",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "6ce7a2b9f41b6034",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "73dd12f6c45fd699",
+            "type": "leaf",
+            "state": {
               "type": "Saved Queries View",
               "state": {},
               "icon": "feather-mouse-pointer",
@@ -201,7 +220,7 @@
             }
           },
           {
-            "id": "3b8d9a83a267376b",
+            "id": "6b921c3fa6f2c9b1",
             "type": "leaf",
             "state": {
               "type": "Saved Queries View",
@@ -211,7 +230,7 @@
             }
           }
         ],
-        "currentTab": 9
+        "currentTab": 12
       }
     ],
     "direction": "horizontal",
@@ -227,15 +246,15 @@
       "callout-manager:Insert Callout": true
     }
   },
-  "active": "3b8d9a83a267376b",
+  "active": "79f31c3962671964",
   "lastOpenFiles": [
+    "🌐 Web-Augmented Generation.md",
     "releases/v1.2.0 - 📦 Semantic Chunk Matching.md",
+    "= attachments/robot-sorting-cubes.png",
     "images/model-precision.gif",
     "images/releases/v1.2.0.jpg",
     "images/releases/v2.3.0.jpg",
     "= attachments/robot-blocks.png",
-    "🌐 Web-Augmented Generation.md",
-    "= attachments/robot-sorting-cubes.png",
     "images/releases",
     "images/New folder",
     "releases",
