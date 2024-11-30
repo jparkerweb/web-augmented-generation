@@ -22,6 +22,8 @@ This Node.js application performs web-augmented generation using various LLM pro
 - Includes comprehensive error handling and logging
 - Supports multiple LLM providers (Ollama, together.ai, llama.cpp)
 
+![screenshot](wag.jpg)
+
 ## Prerequisites
 
 - Node.js (version 16 or higher)
