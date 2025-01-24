@@ -469,6 +469,10 @@ LLM_MODEL=llama3.2:1b
 
 This setup allows you to securely expose your Ollama instance to the internet while maintaining control over access through API key authentication.
 
+
+## Note
+- All `<think>` tags have will be removed from the responses to accommodate for reasoning model responses like Deepseek R1.
+
 ---
 
 ## Appreciation
