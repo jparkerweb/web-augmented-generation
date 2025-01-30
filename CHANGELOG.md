@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2025-01-30
+### 📦 Updated
+- Updated `sentence-parse` to v1.3.1 (wont crash on null inputs)
+
 ## [1.2.2] - 2025-01-24
 ### ✨ Added
 - Detect and remove `<think>` tags from responses to accommodate for resoning model responses like Deepseek R1
