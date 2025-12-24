@@ -30,6 +30,7 @@ const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS) || 5000;
 const DISABLE_SSL_VALIDATION = process.env.DISABLE_SSL_VALIDATION === 'true';
 const SEARXNG_FORMAT = process.env.SEARXNG_FORMAT || 'html';
 const SEARXNG_URL_EXTRA_PARAMETER = process.env.SEARXNG_URL_EXTRA_PARAMETER || '';
+const MAX_CONCURRENT_FETCHES = parseInt(process.env.MAX_CONCURRENT_FETCHES) || 3;
 
 const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 2000;
@@ -179,15 +180,8 @@ async function fetchWebContent(url) {
 
 		// Race the fetch promise against the timeout promise
 		const result = await Promise.race([fetchPromise, timeoutPromise]);
-		
-		// Check if the result was a timeout
-		if (result === 'Timeout') {
-			// Log the timeout error and return an empty string
-			await logError(`Timeout fetching content from ${url} (${FETCH_TIMEOUT_MS}ms)`);
-			return "";
-		}
-		
-		// Process the result to remove extra line breaks and trim unnecessary spaces
+
+		// Remove extra line breaks and trim lines with only spaces or tabs
 		return result
 			.split('\n')
 			.map(line => line.trim())
@@ -196,10 +190,47 @@ async function fetchWebContent(url) {
 			.replace(/\n{3,}/g, '\n\n')
 			.trim();
 	} catch (error) {
-		// Log any errors encountered during the fetch process
+		if (error.message === 'Timeout') {
+			await logError(`Timeout fetching content from ${url} (${FETCH_TIMEOUT_MS}ms)`);
+			return "";
+		}
 		await logError(`Error fetching content from ${url}: ${error.message}`);
 		return "";
 	}
+}
+
+/**
+ * Fetch multiple URLs with limited concurrency
+ * @param {string[]} urls - URLs to fetch
+ * @param {number} concurrency - Max simultaneous fetches
+ * @returns {Promise<{results: Array<{url: string, content: string}>, stats: {success: number, timeout: number, error: number}}>}
+ */
+async function fetchAllWithConcurrency(urls, concurrency = MAX_CONCURRENT_FETCHES) {
+	const results = [];
+	const stats = { success: 0, timeout: 0, error: 0 };
+
+	// Process URLs in chunks of 'concurrency' size
+	for (let i = 0; i < urls.length; i += concurrency) {
+		const chunk = urls.slice(i, i + concurrency);
+		const chunkResults = await Promise.all(
+			chunk.map(async (url) => {
+				const content = await fetchWebContent(url);
+
+				// Track stats based on content result
+				if (content === "") {
+					// Could be timeout or error - fetchWebContent logs the specific reason
+					stats.error++; // Generic counter for any failure
+				} else {
+					stats.success++;
+				}
+
+				return { url, content };
+			})
+		);
+		results.push(...chunkResults);
+	}
+
+	return { results, stats };
 }
 
 /* -------------- */
@@ -211,7 +242,7 @@ async function logError(message) {
 	const errorLogPath = path.join(__dirname, 'error_log.txt');
 	const timestamp = new Date().toISOString();
 	const logMessage = `${timestamp}: ${message}\n`;
-	
+
 	try {
 		await fs.appendFile(errorLogPath, logMessage);
 	} catch (error) {
@@ -228,7 +259,7 @@ async function logInfo(content) {
 	const logPath = path.join(__dirname, 'log.txt');
 	const timestamp = new Date().toISOString();
 	const logMessage = `${timestamp}\n${content}\n\n`;
-	
+
 	try {
 		await fs.appendFile(logPath, logMessage);
 	} catch (error) {
