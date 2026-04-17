@@ -1,4 +1,7 @@
 # 🌐 Web-Augmented Generation
+
+<img src="https://raw.githubusercontent.com/jparkerweb/web-augmented-generation/refs/heads/main/web-augmented-generation.jpg" alt="banner">
+
 This Node.js application performs web-augmented generation using various LLM providers and web search results from SearXNG.
 
 ### Maintained by
